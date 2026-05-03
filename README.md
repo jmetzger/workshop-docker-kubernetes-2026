@@ -1,6 +1,12 @@
 # Kubernetes und Docker Administration und Orchestrierung 
 
 ## Agenda 
+  1. Docker Security
+     * [Behandlung von Containern aus einer IT-Security-Sicht sowie Security Best Practices](docker-security/uebersicht.md)
+ 
+
+
+## Backlog
 
   1. Docker-Grundlagen 
      * [Übersicht Architektur](architektur.md)
