@@ -4,7 +4,14 @@
 
 ```
 # user with id 40000 does not need to exist in container 
-docker run -it -u 40000 alpine 
+docker run -it -u 40000 alpine
+```
+
+```
+# in shell - welcher Benutzer 
+id
+```
+
 
 # user kurs needs to exist in container (/etc/passwd) 
 docker run -it -u kurs alpine 
