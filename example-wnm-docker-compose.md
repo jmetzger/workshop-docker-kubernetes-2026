@@ -1,6 +1,7 @@
 ### Wordpress - blog mit docker compose (Walkthrough)
 
 ```
+cd
 mkdir wp 
 cd wp
 ```
