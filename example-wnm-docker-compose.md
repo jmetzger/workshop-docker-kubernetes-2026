@@ -7,8 +7,6 @@ cd wp
 ```
 
 ```yaml
-version: "3.7"
-
 services:
     database:
         image: mysql:5.7
