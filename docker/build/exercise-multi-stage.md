@@ -1,6 +1,17 @@
 # Multi-stage build 
 
 ```
+cd
+mkdir -p projects/multi-stage-golang
+cd projects/multi-stage-golang
+```
+
+```
+nano Dockerfile
+```
+
+
+```
 FROM golang:1.25
 WORKDIR /src
 COPY <<EOF ./main.go
@@ -17,4 +28,8 @@ RUN go build -o /bin/hello ./main.go
 FROM scratch
 COPY --from=0 /bin/hello /bin/hello
 CMD ["/bin/hello"]
+```
+
+```
+docker build -t golang-app:1.0 .
 ```
