@@ -1,5 +1,18 @@
 # Multi-stage build 
 
+## Warum ? 
+
+  * Oberfläche klein für Angriffe 
+
+## Hash-Tag 
+
+```
+#Prüfung-installierte-Software 
+```
+
+## Beispiel - Übung 
+
+
 ```
 cd
 mkdir -p projects/multi-stage-golang
