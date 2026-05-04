@@ -15,7 +15,7 @@
      * [Exercise Docker->Capabilities and User](docker/security/overview-exercises.md)
 
   1. Image Scanning
-     * [Registry: Beim hochladen scannen](registry/image-scanning.md)
+     * [Registry: Beim hochladen scannen #Schutz-vor-Schadsoftware #Schadcode](registry/image-scanning.md)
 
 
 ## Backlog
