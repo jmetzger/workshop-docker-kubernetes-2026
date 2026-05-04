@@ -12,7 +12,7 @@ docker run -it -u 40000 alpine
 id
 ```
 
-
+```
 # user kurs needs to exist in container (/etc/passwd) 
 docker run -it -u kurs alpine 
 
