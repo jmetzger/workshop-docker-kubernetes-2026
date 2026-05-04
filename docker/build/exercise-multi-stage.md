@@ -7,7 +7,7 @@
 ## Hash-Tag 
 
 ```
-#Prüfung-installierte-Software 
+#minimal-installation
 ```
 
 ## Beispiel - Übung 
