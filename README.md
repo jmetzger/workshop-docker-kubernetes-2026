@@ -10,7 +10,10 @@
      * [Was ist ein Dockerfile](dockerfile.md) 
 
   1. Docker-Installation
-     * [BEST for Ubuntu : Install Docker from Docker Repo](install-docker-ubuntu-apt.md) 
+     * [BEST for Ubuntu : Install Docker from Docker Repo](install-docker-ubuntu-apt.md)
+    
+  1. Docker build (Sicherheit)
+     * [Multi-stage build #minimal-installation](docker/build/exercise-multi-stage.md)
 
   1. Docker Security
      * [Behandlung von Containern aus einer IT-Security-Sicht sowie Security Best Practices](/docker/security/overview.md)
