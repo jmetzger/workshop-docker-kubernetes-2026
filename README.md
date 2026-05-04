@@ -9,6 +9,9 @@
      * [Container vs. Virtuelle Maschine](container-vs-vm.md)
      * [Was ist ein Dockerfile](dockerfile.md) 
 
+  1. Docker-Installation
+     * [BEST for Ubuntu : Install Docker from Docker Repo](install-docker-ubuntu-apt.md) 
+
   1. Docker Security
      * [Behandlung von Containern aus einer IT-Security-Sicht sowie Security Best Practices](/docker/security/overview.md)
      * [Base Images im Überblick](/docker/security/base-image-im-ueberblick.md)
@@ -19,16 +22,6 @@
 
 
 ## Backlog
-
-  1. Docker-Grundlagen 
-     * [Übersicht Architektur](architektur.md)
-     * [Was ist ein Container ?](container.md)
-     * [Was sind container images](container-images.md) 
-     * [Container vs. Virtuelle Maschine](container-vs-vm.md)
-     * [Was ist ein Dockerfile](dockerfile.md) 
-  
-  1. Docker-Installation
-     * [BEST for Ubuntu : Install Docker from Docker Repo](install-docker-ubuntu-apt.md) 
   
   1. Docker-Befehle 
      * [Die wichtigsten Befehle](docker-befehle.md)
