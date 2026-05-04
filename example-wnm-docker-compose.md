@@ -48,7 +48,11 @@ volumes:
 
 ```console
 # now start the system
-docker compose up -d 
+docker compose up -d
+# containers running & ports
+docker compose ps 
+
+
 # we can do some test if db is reachable 
 docker exec -it wp-wordpress-1 bash 
 # within shell do 
