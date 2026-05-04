@@ -4,5 +4,11 @@
  * Harbour bietet das beispielsweise als Feedback an.
 
  * Stichwort: Shift Left ( Security fängt bereits beim Bauen des Images an und im Verlauf an verschiedenen Knotenpunkt
+## Kategorie 
+
+```
+#Schutz-vor-Schadsoftware #Schadcode
+```
+
 
 ## Einschätzung: MUST HAVE 
