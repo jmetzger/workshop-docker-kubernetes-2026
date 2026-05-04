@@ -32,7 +32,7 @@ nano docker-compose.yml
 ```
 services: 
   nginx:
-    image: nginx 
+    image: nginx:1.27
     cap_drop:
       - CHOWN
 ```
