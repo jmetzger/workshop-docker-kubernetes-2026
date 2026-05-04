@@ -2,8 +2,11 @@
 
 ```
 mkdir wp 
-cd wp 
-# nano docker-compose.yml 
+cd wp
+```
+
+```
+nano docker-compose.yml 
 ```
 
 ```yaml
