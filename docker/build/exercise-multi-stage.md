@@ -46,3 +46,8 @@ CMD ["/bin/hello"]
 ```
 docker build -t golang-app:1.0 .
 ```
+
+```
+docker images
+docker run --name golang-app golang-app:1.0
+```
