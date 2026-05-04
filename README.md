@@ -20,6 +20,10 @@
      * [Base Images im Überblick #minimal-installation](/docker/security/base-image-im-ueberblick.md)
      * [Exercise Docker->Capabilities and User](docker/security/overview-exercises.md)
 
+  1. Docker compose
+     * [Docker compose wordpress](/example-wnm-docker-compose.md)
+
+
   1. Image Scanning
      * [Registry: Beim hochladen scannen #Schutz-vor-Schadsoftware #Schadcode](registry/image-scanning.md)
 
