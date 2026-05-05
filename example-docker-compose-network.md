@@ -9,6 +9,6 @@
 ```
 # Wir wollen das Netzwerk sehen
 docker network ls
-docker inspect bridge 
-docker inspect wp_default
+docker network inspect bridge 
+docker network inspect wp_default
 ```
