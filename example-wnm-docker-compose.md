@@ -78,7 +78,7 @@ cd wp
 ```
 
 ```
-nano docker-compose.yaml
+nano docker-compose.yml
 ```
 
 ```yaml
