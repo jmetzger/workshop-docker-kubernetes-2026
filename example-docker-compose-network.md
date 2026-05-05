@@ -106,5 +106,5 @@ docker compose exec busyboxapp sh
 ```
 ping -c 4 <ip-eines-services-aus-dem-wp-project>
 # z.B.
-# ping -c 4 172.18.03
+# ping -c 4 172.18.0.3
 ```
