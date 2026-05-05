@@ -31,6 +31,11 @@
   1. Image Scanning
      * [Registry: Beim hochladen scannen #Schutz-vor-Schadsoftware #Schadcode](registry/image-scanning.md)
 
+  1. Kubernetes - Überblick
+     * [Warum Kubernetes, was macht Kubernetes](warum-kubernetes.md) 
+     * [Aufbau Allgemein](/kubernetes/architecture.md)
+     * [Aufbau mit helm,OpenShift,Rancher(RKE),microk8s](/kubernetes/aufbau-helm-microk8s-kubernetes.md)
+     * [Welches System ? (minikube, micro8ks etc.)](welches-system.md)
 
 ## Backlog
   
@@ -83,11 +88,7 @@
      * [Vulnerability Scanner mit snyk](https://snyk.io/plans/)
      * [Parent/Base - Image bauen für Docker](https://docs.docker.com/develop/develop-images/baseimages/)
     
-  1. Kubernetes - Überblick
-     * [Warum Kubernetes, was macht Kubernetes](warum-kubernetes.md) 
-     * [Aufbau Allgemein](/kubernetes/architecture.md)
-     * [Aufbau mit helm,OpenShift,Rancher(RKE),microk8s](/kubernetes/aufbau-helm-microk8s-kubernetes.md)
-     * [Welches System ? (minikube, micro8ks etc.)](welches-system.md)
+ 
 
   1. Kubernetes - microk8s (Installation und Management) 
      * [Installation Ubuntu - snap](microk8s/installation-ubuntu-snap.md)
