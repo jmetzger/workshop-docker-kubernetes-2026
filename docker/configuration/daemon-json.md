@@ -129,7 +129,7 @@ cp ca.crt /etc/docker/certs.d/registry.example.com:5000/ca.crt
 
 ---
 
-### IP-Tables
+### IP-Tables (ungetestet)
 ```json
 {
   "iptables": false
