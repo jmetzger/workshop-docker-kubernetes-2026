@@ -40,60 +40,9 @@
   1. Kubernetes - Client
      * [kubectl mit bash completion einrichten](install/kubectl-mit-bash-completion.md)
 
-## Backlog
-  
-  1. Docker-Befehle 
-     * [Die wichtigsten Befehle](docker-befehle.md)
-     * [Logs anschauen - docker logs - mit Beispiel nginx](docker-logs-nginx.md)
-     * [docker run](docker-run.md)
-     * [Docker container/image stoppen/löschen](container-image-delete.md)
-     * [Docker containerliste anzeigen](container-liste.md)
-     * [Docker nicht verwendete Images/Container löschen](delete-everything.md)
-     * [Docker container analysieren](docker-inspect.md)
-     * [Docker container in den Vordergrund bringen - attach](/docker/docker-attach.md) 
-     * [Aufräumen - container und images löschen](prune-container-images.md)
-     * [Nginx mit portfreigabe laufen lassen](docker-example-nginx.md)    
-  
-  1. Dockerfile - Examples 
-     * [Ubuntu mit hello world](ubuntu-hello-world.md)
-     * [Ubuntu mit ping](ubuntu-ping.md) 
-     * [Nginx mit content aus html-ordner](nginx-html-content.md)
-  
-  1. Docker-Netzwerk 
-     * [Netzwerk](network.md)
-  
-  1. Docker-Container Examples 
-     * [2 Container mit Netzwerk anpingen](2-containers-with-network-ping.md)
-     * [Container mit eigenem privatem Netz erstellen](container-with-own-bridge.md)  
-  
-  1. Docker-Daten persistent machen / Shared Volumes 
-     * [Überblick](storage-overview.md) 
-     * [Volumes](storage-volumes.md) 
-     * [bind-mounts](docker-bind-mount.md)
-     * [bind-mounts-permissions](docker-bind-mount-permissions.md)
-     
-  1. Docker Compose
-     * [yaml-format](yaml-format.md)
-     * [Ist docker-compose installiert?](docker-compose-installed.md) 
-     * [Example with Wordpress / MySQL](example-wordpress-mysql.md)
-     * [Example with Wordpress / Nginx / MariadB](example-wnm-docker-compose.md)
-     * [Example with Ubuntu and Dockerfile](example-docker-compose-ubuntu-build.md)
-     * [Logs in docker - compose](docker-compose-logs.md)
-     * [docker-compose und replicas](docker-compose-replicas.md)
-     * [docker compose Reference](https://docs.docker.com/compose/compose-file/compose-file-v3/)
-  
-  1. Docker Security 
-     * [Docker Security](docker/security/overview.md)
-     * [Scanning docker image with docker scan/snyx](docker/security/docker-scan-snyk.md) 
+## Backlog - Kubernetes 
 
-  1. Docker - Dokumentation 
-     * [Vulnerability Scanner with docker](https://docs.docker.com/engine/scan/#prerequisites)
-     * [Vulnerability Scanner mit snyk](https://snyk.io/plans/)
-     * [Parent/Base - Image bauen für Docker](https://docs.docker.com/develop/develop-images/baseimages/)
-    
- 
-
-  1. Kubernetes - microk8s (Installation und Management) 
+ 1. Kubernetes - microk8s (Installation und Management) 
      * [Installation Ubuntu - snap](microk8s/installation-ubuntu-snap.md)
      * [Create a cluster with microk8s](microk8s/cluster.md)
      * [Remote-Verbindung zu Kubernetes (microk8s) einrichten](microk8s/connect-from-remote.md)
@@ -178,6 +127,146 @@
   1. Kubernetes Interna / Misc.
      * [OCI,Container,Images Standards](docker-alternatives-kubernetes.md)
      * [Geolocation Kubernetes Cluster](https://learnk8s.io/bite-sized/connecting-multiple-kubernetes-clusters)
+
+
+## Backlog
+  
+  1. Docker-Befehle 
+     * [Die wichtigsten Befehle](docker-befehle.md)
+     * [Logs anschauen - docker logs - mit Beispiel nginx](docker-logs-nginx.md)
+     * [docker run](docker-run.md)
+     * [Docker container/image stoppen/löschen](container-image-delete.md)
+     * [Docker containerliste anzeigen](container-liste.md)
+     * [Docker nicht verwendete Images/Container löschen](delete-everything.md)
+     * [Docker container analysieren](docker-inspect.md)
+     * [Docker container in den Vordergrund bringen - attach](/docker/docker-attach.md) 
+     * [Aufräumen - container und images löschen](prune-container-images.md)
+     * [Nginx mit portfreigabe laufen lassen](docker-example-nginx.md)    
+  
+  1. Dockerfile - Examples 
+     * [Ubuntu mit hello world](ubuntu-hello-world.md)
+     * [Ubuntu mit ping](ubuntu-ping.md) 
+     * [Nginx mit content aus html-ordner](nginx-html-content.md)
+  
+  1. Docker-Netzwerk 
+     * [Netzwerk](network.md)
+  
+  1. Docker-Container Examples 
+     * [2 Container mit Netzwerk anpingen](2-containers-with-network-ping.md)
+     * [Container mit eigenem privatem Netz erstellen](container-with-own-bridge.md)  
+  
+  1. Docker-Daten persistent machen / Shared Volumes 
+     * [Überblick](storage-overview.md) 
+     * [Volumes](storage-volumes.md) 
+     * [bind-mounts](docker-bind-mount.md)
+     * [bind-mounts-permissions](docker-bind-mount-permissions.md)
+     
+  1. Docker Compose
+     * [yaml-format](yaml-format.md)
+     * [Ist docker-compose installiert?](docker-compose-installed.md) 
+     * [Example with Wordpress / MySQL](example-wordpress-mysql.md)
+     * [Example with Wordpress / Nginx / MariadB](example-wnm-docker-compose.md)
+     * [Example with Ubuntu and Dockerfile](example-docker-compose-ubuntu-build.md)
+     * [Logs in docker - compose](docker-compose-logs.md)
+     * [docker-compose und replicas](docker-compose-replicas.md)
+     * [docker compose Reference](https://docs.docker.com/compose/compose-file/compose-file-v3/)
+  
+  1. Docker Security 
+     * [Docker Security](docker/security/overview.md)
+     * [Scanning docker image with docker scan/snyx](docker/security/docker-scan-snyk.md) 
+
+  1. Docker - Dokumentation 
+     * [Vulnerability Scanner with docker](https://docs.docker.com/engine/scan/#prerequisites)
+     * [Vulnerability Scanner mit snyk](https://snyk.io/plans/)
+     * [Parent/Base - Image bauen für Docker](https://docs.docker.com/develop/develop-images/baseimages/)
+    
+ 
+ 1. Kubernetes - microk8s (Installation und Management) 
+     * [Installation Ubuntu - snap](microk8s/installation-ubuntu-snap.md)
+     * [Create a cluster with microk8s](microk8s/cluster.md)
+     * [Remote-Verbindung zu Kubernetes (microk8s) einrichten](microk8s/connect-from-remote.md)
+     * [Bash completion installieren](kubectl/bash-completion.md)
+     * [vim support for yaml](vim/vim-yaml.md)
+     * [nano-support for yaml](nano/nano-yaml.md)
+     * [Ingress controller in microk8s aktivieren](microk8s/ingress.md) 
+
+  1. Kubernetes Praxis API-Objekte 
+     * [Das Tool kubectl (Devs/Ops) - Spickzettel](/kubectl/spickzettel.md)
+     * [kubectl example with run](/kubectl/run-with-example.md)
+     * [Bauen einer Applikation mit Resource Objekten](bauen-einer-webanwendung.md)
+     * [kubectl/manifest/pod](/kubectl-examples/01-pod-nginx.md)
+     * ReplicaSets (Theorie) - (Devs/Ops)
+     * [kubectl/manifest/replicaset](/kubectl-examples/01a-replicaset-nginx.md)
+     * Deployments (Devs/Ops)
+     * [kubectl/manifest/deployments](/kubectl-examples/03-nginx-deployment.md)
+     * [Services - Aufbau](/kubernetes/services-aufbau.md)
+     * [kubectl/manifest/service](/kubectl-examples/03b-service.md)
+     * DaemonSets (Devs/Ops)
+     * [Hintergrund Ingress](/kubernetes/ingress.md) 
+     * [Ingress Controller auf Digitalocean (doks) mit helm installieren](/digitalocean/ingress-auf-digitalocean-mit-helm.md)
+     * [Documentation for default ingress nginx](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/)
+     * [Beispiel Ingress](/kubectl-examples/04-ingress-nginx.md)
+     * [Install Ingress On Digitalocean DOKS](/digitalocean/install-ingress-helm.md)
+     * [Beispiel mit Hostnamen](/kubectl-examples/04-ingress-nginx-with-hostnames.md)
+     * [Achtung: Ingress mit Helm - annotations](/ingress-mit-helm-class-achtung.md)
+     * [Permanente Weiterleitung mit Ingress](/kubectl-examples/05-ingress-permanent-redirect.md)
+     * [ConfigMap Example](/kubectl-examples/06-configmap.md)
+     * [Configmap MariaDB - Example](kubectl-examples/06a-configmap-mariadb.md)
+     * [Configmap MariaDB my.cnf](kubectl-examples/06b-mariadb-configmap-configfile.md)
+     
+  1. Helm (Kubernetes Paketmanager) 
+     * [Helm Grundlagen](/helm/grundlagen.md)
+     * [Helm Warum ?](/helm/warum.md)
+     * [Helm Example](/helm/example.md)
+
+  1. Kubernetes - RBAC 
+     * [Nutzer einrichten microk8s ab kubernetes 1.25](/kubernetes/rbac-create-user-kubernetes-1-25.md) 
+ 
+  1. Kubernetes - Netzwerk (CNI's) / Mesh
+     * [Netzwerk Interna](/kubernetes-networks/networking-internal-overview.md)
+     * [Übersicht Netzwerke](/kubernetes-networks/overview.md) 
+     * [Calico - nginx example NetworkPolicy](/kubernetes-network/callico/00-simple-example.md)
+     * [Beispiele Ingress Egress NetworkPolicy](kubernetes-networks/examples-ingress-egress.md)
+     * [Mesh / istio](sammlung-istio.md)  
+     * [Kubernetes Ports/Protokolle](https://kubernetes.io/docs/reference/networking/ports-and-protocols/)
+     * [IPV4/IPV6 Dualstack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/)
+   
+  1. kubectl 
+     * [Start pod (container with run && examples)](/kubectl/run-with-example.md)
+     * [Bash completion for kubectl](/kubectl/bash-completion.md)
+     * [kubectl Spickzettel](/kubectl/spickzettel.md)
+     * [Tipps&Tricks zu Deploymnent - Rollout](/kubectl/rollout.md) 
+
+  1. Kubernetes - Shared Volumes 
+     * [Shared Volumes with nfs](shared-volumes/nfs-multi.md)
+
+  1. Kubernetes - Wartung / Debugging 
+     * [kubectl drain/uncordon](/kubectl/uncordon-drain.md)
+     * [Alte manifeste konvertieren mit convert plugin](/kubectl/convert-plugin.md)
+     * [Netzwerkverbindung zu pod testen](/tipps-tricks/verbindung-zu-pod-testen.md)
+     * [Curl from pod api-server](/kubernetes-advanced/curl-api-server.md)
+
+  1. Kubernetes - Tipps & Tricks 
+     * [Kubernetes Debuggen ClusterIP/PodIP](/tipps-tricks/cluster-ip-debug.md)
+     * [Debugging pods](tipps-tricks/debugging-pods.md)
+     * [Taints und Tolerations](kubernetes/taints-tolerations.md)
+     * [Autoscaling Pods/Deployments](/kubernetes/autoscaling.md)
+
+  1. Kubernetes Advanced 
+     * [Curl api-server kubernetes aus pod heraus](kubernetes-advanced/curl-api-server.md)
+
+  1. Kubernetes - Documentation 
+     * [Documentation zu microk8s plugins/addons](https://microk8s.io/docs/addons)  
+     * [Shared Volumes - Welche gibt es ?](https://kubernetes.io/docs/concepts/storage/volumes/)
+
+  1. Kubernetes - Hardening 
+     * [Kubernetes Tipps Hardening](kubernetes-security/tipps-hardening.md)
+     * [Kubernetes Security Admission Controller Example](kubernetes-security/pod-security-admission.md)
+     
+  1. Kubernetes Interna / Misc.
+     * [OCI,Container,Images Standards](docker-alternatives-kubernetes.md)
+     * [Geolocation Kubernetes Cluster](https://learnk8s.io/bite-sized/connecting-multiple-kubernetes-clusters)
+ 
   
 ## Backlog
 
