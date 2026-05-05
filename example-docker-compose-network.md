@@ -69,6 +69,7 @@ docker compose exec -it busybox sh
 
 ```
 # in der shell
+# +++ -> ip addresse notieren 
 ping -c4 wordpress
 ping -c4 database
 ```
