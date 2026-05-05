@@ -38,7 +38,8 @@
      * [Welches System ? (minikube, micro8ks etc.)](welches-system.md)
     
   1. Kubernetes - Client
-     * [kubectl mit bash completion einrichten](install/kubectl-mit-bash-completion.md)
+     * [kubectl installieren und bash completion einrichten](install/kubectl-mit-bash-completion.md)
+     * [kubectl einrichten mit namespaces](kubectl/kubectl-einrichten.md)
 
 ## Backlog - Kubernetes 
 
