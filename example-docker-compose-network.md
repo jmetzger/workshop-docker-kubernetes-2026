@@ -4,7 +4,7 @@
 
   * Wordpress Stack läuft
 
-## Exercise 
+## Exercise - Teil 1
 
 ```
 # Wir wollen das Netzwerk sehen
@@ -72,4 +72,39 @@ docker compose exec -it busybox sh
 # +++ -> ip addresse notieren 
 ping -c4 wordpress
 ping -c4 database
+```
+
+
+## Exercise Teil 2: aus anderem Projekt 
+
+```
+cd
+mkdir -p appmaster
+cd appmaster
+```
+
+```
+nano docker-compose.yml
+```
+
+```
+## Diese 3 Zeilen
+services:
+    busyboxapp:
+        image: busybox
+        command: sleep infinity
+```
+
+```
+docker compose up -d
+```
+
+```
+docker compose exec busyboxapp sh
+```
+
+```
+ping -c 4 <ip-eines-services-aus-dem-wp-project>
+# z.B.
+# ping -c 4 172.18.03
 ```
