@@ -84,9 +84,9 @@ kubectl apply -f .
 ```
 # wie ist die ClusterIP ?  
 kubectl get all
-kubectl get svc svc-nginx
+kubectl get svc my-nginx
 # Find endpoints / did svc find pods ?
-kubectl describe svc svc-nginx 
+kubectl describe svc my-nginx 
 ```
 
 ### Schritt 3: Deployment löschen 
@@ -94,7 +94,7 @@ kubectl describe svc svc-nginx
 ```
 kubectl delete -f deploy.yml
 # Keine endpunkte mehr 
-kubectl describe svc svc-nginx
+kubectl describe svc my-nginx
 ```
 
  ### Schritt 4: Deployment wieder erstellen 
@@ -102,7 +102,7 @@ kubectl describe svc svc-nginx
 ```
 kubectl apply -f .
 # Endpunkte wieder da
-kubectl describe svc svc-nginx
+kubectl describe svc my-nginx
 ```
 
 
