@@ -25,6 +25,8 @@
   1. Docker compose
      * [Docker compose wordpress](/example-wnm-docker-compose.md)
 
+  1. Docker Netzwerk
+     * [Docker Netzwerk Exercise](/example-docker-compose-network.md)
 
   1. Image Scanning
      * [Registry: Beim hochladen scannen #Schutz-vor-Schadsoftware #Schadcode](registry/image-scanning.md)
