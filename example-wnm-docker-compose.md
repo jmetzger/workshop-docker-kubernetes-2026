@@ -123,3 +123,13 @@ volumes:
 docker compose down
 docker compose up -d
 ```
+
+```
+# Überprüfung
+docker exec -it wp-wordpress-1 bash
+```
+
+```
+# in der bash - zeigt uns die User-id an 
+id
+```
