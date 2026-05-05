@@ -60,3 +60,15 @@ volumes:
     wordpress_plugins:
     wordpress_themes:
     wordpress_uploads:
+```
+
+```
+docker compose up -d
+docker compose exec -it busybox sh
+```
+
+```
+# in der shell
+ping -c4 wordpress
+ping -c4 database
+```
