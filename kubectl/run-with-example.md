@@ -23,7 +23,9 @@ kubectl get pods -o wide
 
 ```
 kubectl run sonnenschein --image=foo2
-# ImageErrPull - Image konnte nicht geladen werden 
+# Ergebnis-> pod/sonnenschein created
+# ABER: 
+# ImageErrPull - Image konnte nicht geladen werden  => bedeutet pod läuft nicht, obwohl nicht 
 kubectl get pods 
 # Weitere status - info 
 kubectl describe pods sonnenschein
