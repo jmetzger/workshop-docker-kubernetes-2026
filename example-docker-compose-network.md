@@ -108,3 +108,9 @@ ping -c 4 <ip-eines-services-aus-dem-wp-project>
 # z.B.
 # ping -c 4 172.18.0.3
 ```
+
+## Optional: container in bestimmten Netz starten (mit run) 
+
+```
+docker run -it --network wp_default --name containertester busybox
+```
