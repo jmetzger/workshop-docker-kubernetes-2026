@@ -30,10 +30,3 @@ kubectl get pods
 ```
 
 
-```
-# Beispiel 
-# kubectl create ns jochen
-# kubectl get ns
-# kubectl config set-context --current --namespace jochen
-# kubectl get pods
-```
