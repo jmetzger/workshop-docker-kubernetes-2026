@@ -98,7 +98,7 @@ services:
         image: wordpress:latest
         #### Hier kommt der user rein ###
         #### userid muss nicht in /etc/passwd im Container existieren 
-        user: 10000
+        user: "10000"
         depends_on:
             - database
         ports:
