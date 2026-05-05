@@ -92,7 +92,7 @@ kubectl describe svc my-nginx
 ### Schritt 3: Deployment löschen 
 
 ```
-kubectl delete -f deploy.yml
+kubectl delete -f 01-deploy.yml
 # Keine endpunkte mehr 
 kubectl describe svc my-nginx
 ```
