@@ -36,3 +36,32 @@ spec:
 ```
 kubectl apply -f deploy.yml 
 ```
+
+## Explore 
+
+```
+kubectl get all
+```
+
+## Optional: Change image - Version 
+
+```
+nano nginx-deployment.yml 
+```
+
+
+### Version 1: (optical nicer)
+
+```
+# Ändern des images von nginxinc/nginx-unprivileged:1.28 -> auf 1.29
+# danach 
+kubectl apply -f . && watch kubectl get pods 
+```
+
+### Version 2: 
+
+```
+# Ändern des images von nginxinc/nginx-unprivileged:1.28 -> auf 1.29
+# danach 
+kubectl apply -f . && kubectl get all && kubectl get pods -w
+```
