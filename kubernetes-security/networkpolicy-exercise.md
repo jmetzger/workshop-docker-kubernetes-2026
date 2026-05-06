@@ -73,20 +73,20 @@ spec:
 ```
 
 ```
-kubectl apply -f 00-baseline.yml -n tln<nr>
-kubectl get pod,svc -n tln<nr>
+kubectl apply -f 00-baseline.yml -n default
+kubectl get pod,svc -n default
 ```
 
 Warten bis beide Pods laufen:
 
 ```
-kubectl wait pod frontend backend --for=condition=Ready -n tln<nr> --timeout=60s
+kubectl wait pod frontend backend --for=condition=Ready -n default --timeout=60s
 ```
 
 Frontend erreicht Backend — kein Problem:
 
 ```
-kubectl exec -n tln<nr> frontend -- curl -s http://backend | grep title
+kubectl exec -n default frontend -- curl -s http://backend | grep title
 ```
 
 **Erwartete Ausgabe:** nginx-Titelzeile — Verbindung funktioniert ungehindert.
@@ -114,13 +114,13 @@ spec:
 `podSelector: {}` bedeutet: gilt fuer **alle** Pods im Namespace.
 
 ```
-kubectl apply -f 01-default-deny.yml -n tln<nr>
+kubectl apply -f 01-default-deny.yml -n default
 ```
 
 Verbindung testen:
 
 ```
-kubectl exec -n tln<nr> frontend -- curl -s --max-time 5 http://backend
+kubectl exec -n default frontend -- curl -s --max-time 5 http://backend
 ```
 
 **Erwarteter Fehler:**
@@ -131,7 +131,7 @@ curl: (28) Connection timed out after 5000 milliseconds
 Auch DNS ist jetzt geblockt:
 
 ```
-kubectl exec -n tln<nr> frontend -- curl -s --max-time 5 http://example.com
+kubectl exec -n default frontend -- curl -s --max-time 5 http://example.com
 ```
 
 **Erwarteter Fehler:** Timeout — kein Egress, kein DNS.
@@ -166,13 +166,13 @@ spec:
 ```
 
 ```
-kubectl apply -f 02-allow-dns.yml -n tln<nr>
+kubectl apply -f 02-allow-dns.yml -n default
 ```
 
 DNS testen:
 
 ```
-kubectl exec -n tln<nr> frontend -- nslookup backend
+kubectl exec -n default frontend -- nslookup backend
 ```
 
 **Erwartete Ausgabe:** IP-Adresse wird aufgeloest.
@@ -180,7 +180,7 @@ kubectl exec -n tln<nr> frontend -- nslookup backend
 HTTP zu Backend schlaegt aber noch fehl:
 
 ```
-kubectl exec -n tln<nr> frontend -- curl -s --max-time 5 http://backend
+kubectl exec -n default frontend -- curl -s --max-time 5 http://backend
 ```
 
 **Erwarteter Fehler:** Timeout — HTTP-Traffic noch gesperrt.
@@ -231,13 +231,13 @@ spec:
 ```
 
 ```
-kubectl apply -f 03-frontend-to-backend.yml -n tln<nr>
+kubectl apply -f 03-frontend-to-backend.yml -n default
 ```
 
 Verbindung testen:
 
 ```
-kubectl exec -n tln<nr> frontend -- curl -s http://backend | grep title
+kubectl exec -n default frontend -- curl -s http://backend | grep title
 ```
 
 **Erwartete Ausgabe:** nginx-Titelzeile — Verbindung funktioniert wieder.
@@ -249,7 +249,7 @@ kubectl exec -n tln<nr> frontend -- curl -s http://backend | grep title
 Externer Traffic bleibt gesperrt (Egress-Deny greift):
 
 ```
-kubectl exec -n tln<nr> frontend -- curl -s --max-time 5 http://example.com
+kubectl exec -n default frontend -- curl -s --max-time 5 http://example.com
 ```
 
 **Erwarteter Fehler:** Timeout.
@@ -257,7 +257,7 @@ kubectl exec -n tln<nr> frontend -- curl -s --max-time 5 http://example.com
 Backend kann Frontend **nicht** erreichen (kein Egress vom Backend freigegeben):
 
 ```
-kubectl exec -n tln<nr> backend -- curl -s --max-time 5 http://frontend
+kubectl exec -n default backend -- curl -s --max-time 5 http://frontend
 ```
 
 **Erwarteter Fehler:** Timeout.
@@ -265,7 +265,7 @@ kubectl exec -n tln<nr> backend -- curl -s --max-time 5 http://frontend
 Alle aktiven NetworkPolicies anzeigen:
 
 ```
-kubectl get networkpolicy -n tln<nr>
+kubectl get networkpolicy -n default
 ```
 
 **Erwartete Ausgabe:**
@@ -320,7 +320,7 @@ kubectl delete -f 03-frontend-to-backend.yml \
                -f 02-allow-dns.yml \
                -f 01-default-deny.yml \
                -f 00-baseline.yml \
-               -n tln<nr>
+               -n default
 ```
 
 ---
