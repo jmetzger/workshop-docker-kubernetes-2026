@@ -89,6 +89,9 @@
      * [Kap. 1.2.15 - API Server Profiling: Warum nicht in Produktion?](kubernetes-security/hardening-control-plane-profiling.md)
      * [Kap. 1 - CIS Benchmark Control Plane: Übung mit kube-bench](kubernetes-security/cis-benchmark-exercise-control-plane.md)
 
+  1. Kubernetes - Audit Logging
+     * [Kap. 3.2 - API Server Audit Logging aktivieren und auswerten](kubernetes-security/audit-logging-exercise.md)
+
   1. Kubernetes - Hardening (Worker Nodes)
      * [Kap. 4 - CIS Benchmark Worker Node: Übung mit kube-bench](kubernetes-security/cis-benchmark-exercise.md)
 
@@ -96,9 +99,6 @@
      * [Kap. 5.1 - RBAC Grundlagen: Roles, Bindings, Subjects, Verbs](kubernetes-security/rbac-overview.md)
      * [Kap. 5.1 - RBAC Scanning: Schwachstellen mit rbac-lookup finden](kubernetes-security/rbac-exercise-scanning.md)
      * [Kap. 5.1.2/5.1.6 - RBAC Least Privilege für Entwickler-Namespace](kubernetes-security/rbac-exercise-least-privilege.md)
-
-  1. Kubernetes - Audit Logging
-     * [Kap. 3.2 - API Server Audit Logging aktivieren und auswerten](kubernetes-security/audit-logging-exercise.md)
 
   1. Kubernetes - SecurityContext
      * [Kap. 5.2 - Pods haerten: non-root, read-only, Capabilities, Seccomp](kubernetes-security/securitycontext-exercise.md)
