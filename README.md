@@ -78,6 +78,9 @@
      * [Überblick Hashicorp Vault (VSO, Sidecar, Volumes)](hashicorp-vault/overview.md)
      * [Übung: Vault Secrets Operator (VSO) mit Kubernetes](hashicorp-vault/exercise-vso.md)
 
+  1. Trainingszugänge / Clusterumgebung
+     * [Clusterumgebung & Zugänge (Bastion, ssh cp, ssh worker, kubectl)](kubernetes-security/cluster-access.md)
+
   1. Kubernetes - Hardening (CIS Benchmark)
      * [Kubernetes Versionen & CIS Benchmark Überblick](kubernetes-security/cis-benchmark-overview.md)
      * [CIS Kubernetes Benchmark V1.12.0 - PDF (Link vom Trainer)](http://161.35.210.204/CIS_Kubernetes_Benchmark_V1.12.0.pdf)
