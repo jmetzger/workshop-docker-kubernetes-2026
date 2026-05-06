@@ -89,9 +89,6 @@
   1. Trainingszugänge / Clusterumgebung
      * [Clusterumgebung & Zugänge (Bastion, ssh cp, ssh worker, kubectl)](kubernetes-security/cluster-access.md)
 
-  1. Kubernetes - Veraltete Images
-     * [Kap. 5.x - Veraltete Images finden mit version-checker](kubernetes-security/outdated-images-exercise.md)
-
   1. Kubernetes - Hardening Überblick
      * [Kubernetes Versionen & CIS Benchmark Überblick](kubernetes-security/cis-benchmark-overview.md)
      * [CIS Kubernetes Benchmark V1.12.0 - PDF (Link vom Trainer)](http://161.35.210.204/CIS_Kubernetes_Benchmark_V1.12.0.pdf)
@@ -119,6 +116,9 @@
 
   1. Kubernetes - Pod Security Admission (PSA)
      * [Kap. 5.2.1 - PSA: Namespace-weite Durchsetzung von Pod Security Standards](kubernetes-security/pod-security-admission.md)
+
+  1. Kubernetes - Veraltete Images
+     * [Kap. 5.x - Veraltete Images finden mit version-checker](kubernetes-security/outdated-images-exercise.md)
 
   1. Kubernetes - Security Scanning mit Trivy
      * [CIS 1.x/4.x/5.x - Trivy: Image-CVEs und Cluster-Compliance-Check](kubernetes-security/trivy-exercise.md)
