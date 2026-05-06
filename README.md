@@ -86,16 +86,16 @@
      * [CIS Kubernetes Benchmark V1.12.0 - PDF (Link vom Trainer)](http://161.35.210.204/CIS_Kubernetes_Benchmark_V1.12.0.pdf)
 
   1. Kubernetes - Hardening (Control Plane)
-     * [API Server Profiling - Warum nicht in Produktion? (CIS 1.2.15)](kubernetes-security/hardening-control-plane-profiling.md)
-     * [CIS Benchmark Kubernetes - Control Plane (kube-bench)](kubernetes-security/cis-benchmark-exercise-control-plane.md)
+     * [Kap. 1.2.15 - API Server Profiling: Warum nicht in Produktion?](kubernetes-security/hardening-control-plane-profiling.md)
+     * [Kap. 1 - CIS Benchmark Control Plane: Übung mit kube-bench](kubernetes-security/cis-benchmark-exercise-control-plane.md)
 
   1. Kubernetes - Hardening (Worker Nodes)
-     * [CIS Benchmark Kubernetes - Worker Node (kube-bench)](kubernetes-security/cis-benchmark-exercise.md)
+     * [Kap. 4 - CIS Benchmark Worker Node: Übung mit kube-bench](kubernetes-security/cis-benchmark-exercise.md)
 
   1. Kubernetes - RBAC Hardening
-     * [RBAC Grundlagen - Roles, Bindings, Subjects, Verbs](kubernetes-security/rbac-overview.md)
-     * [RBAC Scanning - Schwachstellen mit rbac-lookup finden (CIS 5.1)](kubernetes-security/rbac-exercise-scanning.md)
-     * [RBAC - Least Privilege für Entwickler-Namespace (CIS 5.1.2/5.1.6)](kubernetes-security/rbac-exercise-least-privilege.md)
+     * [Kap. 5.1 - RBAC Grundlagen: Roles, Bindings, Subjects, Verbs](kubernetes-security/rbac-overview.md)
+     * [Kap. 5.1 - RBAC Scanning: Schwachstellen mit rbac-lookup finden](kubernetes-security/rbac-exercise-scanning.md)
+     * [Kap. 5.1.2/5.1.6 - RBAC Least Privilege für Entwickler-Namespace](kubernetes-security/rbac-exercise-least-privilege.md)
 
 
 ## Backlog - Kubernetes 
