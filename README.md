@@ -100,6 +100,9 @@
   1. Kubernetes - Audit Logging
      * [Kap. 3.2 - API Server Audit Logging aktivieren und auswerten](kubernetes-security/audit-logging-exercise.md)
 
+  1. Kubernetes - SecurityContext
+     * [Kap. 5.2 - Pods haerten: non-root, read-only, Capabilities, Seccomp](kubernetes-security/securitycontext-exercise.md)
+
 
 ## Backlog - Kubernetes 
 
