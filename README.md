@@ -80,6 +80,9 @@
      * [CIS Benchmark Kubernetes - Worker Node (kube-bench)](kubernetes-security/cis-benchmark-exercise.md)
      * [CIS Benchmark Kubernetes - Control Plane (kube-bench)](kubernetes-security/cis-benchmark-exercise-control-plane.md)
 
+  1. Kubernetes - Secrets Management (Hashicorp Vault)
+     * [Überblick Hashicorp Vault (VSO, Sidecar, Volumes)](hashicorp-vault/overview.md)
+     * [Übung: Vault Secrets Operator (VSO) mit Kubernetes](hashicorp-vault/exercise-vso.md)
 
 
 ## Backlog - Kubernetes 
