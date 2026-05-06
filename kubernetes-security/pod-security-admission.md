@@ -58,7 +58,10 @@ cd manifests/psa
 ```
 
 ```
-# vi 01-ns.yml
+nano 01-ns.yml
+```
+
+```
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -85,7 +88,10 @@ psa-restricted   Active   5s    pod-security.kubernetes.io/enforce=restricted,..
 ## Schritt 2: Root-Container wird abgelehnt
 
 ```
-# vi 02-nginx-root.yml
+nano 02-nginx-root.yml
+```
+
+```
 apiVersion: v1
 kind: Pod
 metadata:
@@ -122,7 +128,10 @@ PSA blockiert den Pod direkt beim `kubectl apply` — der Container wird nie ges
 ## Schritt 3: Compliant Pod laeuft durch
 
 ```
-# vi 03-nginx-ok.yml
+nano 03-nginx-ok.yml
+```
+
+```
 apiVersion: v1
 kind: Pod
 metadata:
@@ -163,7 +172,10 @@ Im `warn`-Modus (`enforce: baseline`) laeuft der Pod durch — der Entwickler si
 aber sofort die Warnung im Terminal. Gut fuer eine Einfuehrungsphase vor echtem Enforcement.
 
 ```
-# vi 04-ns-warn.yml
+nano 04-ns-warn.yml
+```
+
+```
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -179,7 +191,10 @@ kubectl apply -f 04-ns-warn.yml
 ```
 
 ```
-# vi 05-nginx-warn.yml
+nano 05-nginx-warn.yml
+```
+
+```
 apiVersion: v1
 kind: Pod
 metadata:
