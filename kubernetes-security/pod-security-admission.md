@@ -1,10 +1,26 @@
 # Pod Security Admission — Namespace-weite Durchsetzung (CIS 5.2.1)
 
-## Hintergrund
+## Hintergrund: Warum PSA?
 
 Die `securitycontext-exercise` zeigt, *wie* man Pods korrekt konfiguriert.
-PSA erzwingt diese Konfiguration automatisch auf Namespace-Ebene — ein Entwickler,
-der `runAsNonRoot` vergisst, bekommt sofort eine Ablehnung statt einen laufenden Container.
+Das Problem: SecurityContext ist ein **"Trust the Developer"**-Ansatz. Jeder muss
+es jedes Mal richtig machen — und in einem Team mit vielen Entwicklern, unter
+Zeitdruck oder bei neuen Mitarbeitern passiert es unvermeidlich, dass jemand
+`runAsNonRoot` vergisst, Capabilities nicht droppt oder `allowPrivilegeEscalation`
+nicht setzt. Das Ergebnis ist ein root-Container in Produktion, ohne dass jemand
+es bemerkt.
+
+PSA ist die **technische Durchsetzung** dieser Anforderungen auf Cluster-Ebene:
+
+- **Kein Vertrauen in die Konfiguration des Einzelnen** — der Cluster lehnt
+  nicht-konforme Pods ab, bevor sie starten
+- **Sofortiges Feedback** — der Entwickler sieht beim `kubectl apply` exakt,
+  was fehlt, nicht erst im Monitoring
+- **Defense in Depth** — auch wenn ein Angreifer einen Pod einschleusen kann,
+  verhindert PSA, dass er privilegiert laeuft
+
+PSA ist seit Kubernetes 1.25 fest eingebaut — kein zusaetzlicher Controller,
+kein Helm Chart, nur Namespace-Labels.
 
 | CIS | Anforderung | PSA-Profil |
 |-----|-------------|------------|
@@ -46,7 +62,7 @@ cd manifests/psa
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: psa-tln<nr>
+  name: psa-restricted
   labels:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/warn: restricted
@@ -55,13 +71,13 @@ metadata:
 
 ```
 kubectl apply -f 01-ns.yml
-kubectl get namespace psa-tln<nr> --show-labels
+kubectl get namespace psa-restricted --show-labels
 ```
 
 **Erwartete Ausgabe (Labels sichtbar):**
 ```
 NAME          STATUS   AGE   LABELS
-psa-tln<nr>   Active   5s    pod-security.kubernetes.io/enforce=restricted,...
+psa-restricted   Active   5s    pod-security.kubernetes.io/enforce=restricted,...
 ```
 
 ---
@@ -74,7 +90,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: nginx-root
-  namespace: psa-tln<nr>
+  namespace: psa-restricted
 spec:
   containers:
   - name: nginx
@@ -111,7 +127,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: nginx-ok
-  namespace: psa-tln<nr>
+  namespace: psa-restricted
 spec:
   securityContext:
     runAsNonRoot: true
@@ -130,7 +146,7 @@ spec:
 
 ```
 kubectl apply -f 03-nginx-ok.yml
-kubectl get pod nginx-ok -n psa-tln<nr>
+kubectl get pod nginx-ok -n psa-restricted
 ```
 
 **Erwartete Ausgabe:**
@@ -151,7 +167,7 @@ aber sofort die Warnung im Terminal. Gut fuer eine Einfuehrungsphase vor echtem 
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: psa-warn-tln<nr>
+  name: psa-warn
   labels:
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/warn: restricted
@@ -168,7 +184,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: nginx-warn
-  namespace: psa-warn-tln<nr>
+  namespace: psa-warn
 spec:
   containers:
   - name: nginx
@@ -224,7 +240,7 @@ oder OPA bereits im Stack vorhanden ist.
 ## Aufraeumen
 
 ```
-kubectl delete namespace psa-tln<nr> psa-warn-tln<nr>
+kubectl delete namespace psa-restricted psa-warn
 ```
 
 ---
