@@ -109,8 +109,8 @@
   1. Kubernetes - Pod Security Admission (PSA)
      * [Kap. 5.2.1 - PSA: Namespace-weite Durchsetzung von Pod Security Standards](kubernetes-security/pod-security-admission.md)
 
-  1. Kubernetes - Laufzeitanalyse & Security Scanning
-     * [trivy k8s, Image-CVEs, kubectl-Queries: Was laeuft gerade unsicher?](kubernetes-security/security-scanning.md)
+  1. Kubernetes - Security Scanning mit Trivy
+     * [CIS 1.x/4.x/5.x - Trivy: Image-CVEs und Cluster-Compliance-Check](kubernetes-security/trivy-exercise.md)
 
   1. Abschluss-Lab
      * [Kap. 5.1/5.2/5.3 - Pod Hardening Lab: SecurityContext, NetworkPolicy, RBAC](kubernetes-security/pod-hardening-lab.md)
