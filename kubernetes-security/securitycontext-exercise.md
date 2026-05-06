@@ -26,6 +26,10 @@ cd manifests/securitycontext
 ```
 
 ```
+kubectl create namespace securitycontext
+```
+
+```
 # vi 01-pod-root.yml
 apiVersion: v1
 kind: Pod
@@ -38,13 +42,13 @@ spec:
 ```
 
 ```
-kubectl apply -f 01-pod-root.yml -n tln<nr>
+kubectl apply -f 01-pod-root.yml -n securitycontext
 ```
 
 Als welcher User laeuft der Container?
 
 ```
-kubectl exec -n tln<nr> pod-root -- id
+kubectl exec -n securitycontext pod-root -- id
 ```
 
 **Erwartete Ausgabe:**
@@ -55,7 +59,7 @@ uid=0(root) gid=0(root) groups=0(root)
 Kann der Container ins Filesystem schreiben?
 
 ```
-kubectl exec -n tln<nr> pod-root -- touch /test-file && echo "Schreiben moeglich!"
+kubectl exec -n securitycontext pod-root -- touch /test-file && echo "Schreiben moeglich!"
 ```
 
 Das ist das Problem: root im Container, volles Schreibrecht.
@@ -81,14 +85,14 @@ spec:
 ```
 
 ```
-kubectl apply -f 02-pod-nonroot.yml -n tln<nr>
-kubectl get pod pod-nonroot -n tln<nr>
+kubectl apply -f 02-pod-nonroot.yml -n securitycontext
+kubectl get pod pod-nonroot -n securitycontext
 ```
 
 User pruefen:
 
 ```
-kubectl exec -n tln<nr> pod-nonroot -- id
+kubectl exec -n securitycontext pod-nonroot -- id
 ```
 
 **Erwartete Ausgabe:**
@@ -141,14 +145,14 @@ spec:
 ```
 
 ```
-kubectl apply -f 03-pod-readonly.yml -n tln<nr>
-kubectl get pod pod-readonly -n tln<nr>
+kubectl apply -f 03-pod-readonly.yml -n securitycontext
+kubectl get pod pod-readonly -n securitycontext
 ```
 
 Schreibversuch ins Root-Filesystem:
 
 ```
-kubectl exec -n tln<nr> pod-readonly -- touch /test-file
+kubectl exec -n securitycontext pod-readonly -- touch /test-file
 ```
 
 **Erwarteter Fehler:**
@@ -159,7 +163,7 @@ touch: /test-file: Read-only file system
 Schreiben in erlaubtes Verzeichnis funktioniert noch:
 
 ```
-kubectl exec -n tln<nr> pod-readonly -- touch /tmp/test-file && echo "tmp ist schreibbar"
+kubectl exec -n securitycontext pod-readonly -- touch /tmp/test-file && echo "tmp ist schreibbar"
 ```
 
 ---
@@ -206,14 +210,14 @@ spec:
 ```
 
 ```
-kubectl apply -f 04-pod-nocaps.yml -n tln<nr>
-kubectl get pod pod-nocaps -n tln<nr>
+kubectl apply -f 04-pod-nocaps.yml -n securitycontext
+kubectl get pod pod-nocaps -n securitycontext
 ```
 
 Capabilities pruefen:
 
 ```
-kubectl exec -n tln<nr> pod-nocaps -- cat /proc/1/status | grep Cap
+kubectl exec -n securitycontext pod-nocaps -- cat /proc/1/status | grep Cap
 ```
 
 **Erwartete Ausgabe:** Alle Capability-Werte sind `0000000000000000` — keine Capabilities aktiv.
@@ -267,15 +271,15 @@ spec:
 ```
 
 ```
-kubectl apply -f 05-pod-hardened.yml -n tln<nr>
-kubectl get pod pod-hardened -n tln<nr>
+kubectl apply -f 05-pod-hardened.yml -n securitycontext
+kubectl get pod pod-hardened -n securitycontext
 ```
 
 Pod laeuft und ist voll gehaertet:
 
 ```
-kubectl exec -n tln<nr> pod-hardened -- id
-kubectl exec -n tln<nr> pod-hardened -- curl -s http://localhost:8080 | head -5
+kubectl exec -n securitycontext pod-hardened -- id
+kubectl exec -n securitycontext pod-hardened -- curl -s http://localhost:8080 | head -5
 ```
 
 ---
@@ -285,7 +289,7 @@ kubectl exec -n tln<nr> pod-hardened -- curl -s http://localhost:8080 | head -5
 Was wuerde kube-bench zu unserem urspruenglichen Pod sagen?
 
 ```
-kubectl get pod pod-root -n tln<nr> -o json | python3 -c "
+kubectl get pod pod-root -n securitycontext -o json | python3 -c "
 import sys, json
 p = json.load(sys.stdin)
 c = p['spec']['containers'][0]
@@ -299,14 +303,15 @@ checks = {
   'seccompProfile':           psc.get('seccompProfile', {}).get('type') == 'RuntimeDefault',
 }
 for k, v in checks.items():
-    print(f'  {'PASS' if v else 'FAIL'}  {k}')
+    status = 'PASS' if v else 'FAIL'
+    print(f'  {status}  {k}')
 "
 ```
 
 Dasselbe fuer den gehaerteten Pod:
 
 ```
-kubectl get pod pod-hardened -n tln<nr> -o json | python3 -c "
+kubectl get pod pod-hardened -n securitycontext -o json | python3 -c "
 import sys, json
 p = json.load(sys.stdin)
 c = p['spec']['containers'][0]
@@ -320,7 +325,8 @@ checks = {
   'seccompProfile':           psc.get('seccompProfile', {}).get('type') == 'RuntimeDefault',
 }
 for k, v in checks.items():
-    print(f'  {'PASS' if v else 'FAIL'}  {k}')
+    status = 'PASS' if v else 'FAIL'
+    print(f'  {status}  {k}')
 "
 ```
 
@@ -329,7 +335,7 @@ for k, v in checks.items():
 ## Aufraeumen
 
 ```
-kubectl delete pod pod-root pod-nonroot pod-readonly pod-nocaps pod-hardened -n tln<nr>
+kubectl delete pod pod-root pod-nonroot pod-readonly pod-nocaps pod-hardened -n securitycontext
 ```
 
 ---
