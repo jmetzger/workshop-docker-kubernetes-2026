@@ -15,16 +15,18 @@ Kubernetes Audit Logging zeichnet alle Anfragen an den API-Server auf — wer ha
 
 **Warum diese Policy-Struktur?**
 
-Die Audit Policy filtert gezielt:
+Die Audit Policy filtert gezielt — nicht alles muss mit gleichem Detail geloggt werden:
 
 | Ressource | Level | Warum |
 |-----------|-------|-------|
-| `secrets`, `configmaps` | `Metadata` | Inhalt (Passwörter!) darf nicht geloggt werden — nur wer, wann, was |
-| `pods` | `RequestResponse` | Vollständig loggen, um Pod-Erstellungen forensisch nachzuvollziehen |
-| kube-proxy watches | `None` | Sehr häufige Systemanfragen — würden Log fluten ohne Mehrwert |
-| node gets | `None` | Routineanfragen von kubelets — kein Sicherheitsrelevanz |
-| events | `None` | Kubernetes-interne Events — kein Audit-Wert |
-| Alles andere | `Metadata` | Sicherheitsnetz: Wer hat was gemacht, ohne Inhalte zu speichern |
+| `secrets`, `configmaps` | `Metadata` | Nur WER/WANN/WAS — nicht WAS DRIN STEHT. Mit `RequestResponse` würden Passwörter und Tokens im Klartext ins Log geschrieben. |
+| `pods` | `RequestResponse` | Forensisch wertvoll: Bei einem Incident will man genau wissen, welcher Container mit welchem Image und welchen Env-Vars erstellt wurde. |
+| kube-proxy `watch` | `None` | kube-proxy aktualisiert iptables-Regeln — dutzende Male pro Minute, 24/7. Würde das Log fluten ohne jeden Sicherheitswert. |
+| node `get` | `None` | Jedes kubelet fragt regelmäßig seinen Node-Status ab. Tausende Einträge pro Stunde, null forensischer Wert. |
+| `events` | `None` | Kubernetes-interne Statusmeldungen (Pod startet, crasht…) — kein Zugriffsaudit-Wert. |
+| Alles andere | `Metadata` | Sicherheitsnetz: Man weiß, dass ein User um 14:32 ein Secret gelesen hat — ohne den Inhalt zu sehen. |
+
+Das `omitStages: [RequestReceived]` verhindert doppelte Einträge: ohne es würde jede Anfrage zweimal geloggt (beim Empfang und beim Antworten).
 
 ## Schritt 1: Aktuellen Zustand prüfen
 
