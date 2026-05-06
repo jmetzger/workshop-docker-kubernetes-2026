@@ -97,6 +97,9 @@
      * [Kap. 5.1 - RBAC Scanning: Schwachstellen mit rbac-lookup finden](kubernetes-security/rbac-exercise-scanning.md)
      * [Kap. 5.1.2/5.1.6 - RBAC Least Privilege für Entwickler-Namespace](kubernetes-security/rbac-exercise-least-privilege.md)
 
+  1. Kubernetes - Audit Logging
+     * [Kap. 3.2 - API Server Audit Logging aktivieren und auswerten](kubernetes-security/audit-logging-exercise.md)
+
 
 ## Backlog - Kubernetes 
 
