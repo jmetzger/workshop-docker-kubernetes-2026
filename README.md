@@ -108,14 +108,14 @@
      * [Kap. 5.1 - RBAC Scanning: Schwachstellen mit rbac-lookup finden](kubernetes-security/rbac-exercise-scanning.md)
      * [Kap. 5.1.2/5.1.6 - RBAC Least Privilege für Entwickler-Namespace](kubernetes-security/rbac-exercise-least-privilege.md)
 
+  1. Kubernetes - Pod Security Admission (PSA)
+     * [Kap. 5.2.1 - PSA: Namespace-weite Durchsetzung von Pod Security Standards](kubernetes-security/pod-security-admission.md)
+
   1. Kubernetes - SecurityContext
      * [Kap. 5.2.2/5.2.4/5.2.6/5.2.9 - Pods haerten: non-root, read-only, Capabilities, Seccomp](kubernetes-security/securitycontext-exercise.md)
 
   1. Kubernetes - NetworkPolicy
      * [Kap. 5.3 - Pod-Traffic absichern: Default-Deny, DNS, Pod-zu-Pod](kubernetes-security/networkpolicy-exercise.md)
-
-  1. Kubernetes - Pod Security Admission (PSA)
-     * [Kap. 5.2.1 - PSA: Namespace-weite Durchsetzung von Pod Security Standards](kubernetes-security/pod-security-admission.md)
 
   1. Kubernetes - Veraltete Images
      * [Kap. 5.x - Veraltete Images finden mit version-checker](kubernetes-security/outdated-images-exercise.md)
