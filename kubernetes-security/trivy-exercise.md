@@ -1,149 +1,214 @@
-# Trivy: Image-Scanning und CIS Compliance Check
+# Laufzeitanalyse mit trivy - CVEs, Misconfigs und CIS Compliance
 
 ## Hintergrund
 
-Trivy (Aqua Security) ist ein umfassendes Security-Scanner-Tool. Im Kubernetes-Kontext
-deckt es zwei unterschiedliche Bereiche ab — mit unterschiedlichem CIS-Bezug:
+Haerten allein reicht nicht — man muss auch wissen, was **im laufenden System**
+gerade unsicher ist. Drei typische Fragen:
 
-| Scan-Modus | Was es prueft | CIS-Bezug |
-|------------|--------------|-----------|
-| `trivy image <image>` | CVEs in OS-Paketen und Libraries | Kein CIS Kubernetes Kapitel (Supply Chain / NIST SP 800-190) |
-| `trivy k8s --compliance=k8s-cis` | Cluster-Konfiguration gegen CIS Benchmark | Direkt CIS 1.x, 4.x, 5.x |
+| Frage | Tool |
+|-------|------|
+| Welche Pods laufen privilegiert oder als root? | `kubectl` Queries |
+| Haben Images bekannte CVEs? | `trivy image` |
+| Gesamtbild: Misconfigs + CVEs + RBAC? | `trivy k8s --report=summary` |
+| Wo stehe ich gegen den CIS Benchmark? | `trivy k8s --compliance=k8s-cis-1.23` |
+| Wer hat kritische RBAC-Rechte? | `rbac-lookup` |
 
-> Trivy ist ein **Pruefw­erkzeug** — es hat selbst kein CIS-Kapitel.
-> Die Findings aus `trivy k8s` referenzieren CIS-Checks, die wir in diesem Workshop
-> bereits haertet haben (kube-bench, SecurityContext, PSA).
+**trivy** ist ein CNCF Graduated Project (Apache 2.0) von Aqua Security —
+dasselbe Tool das viele Teams bereits fuer Image-Scanning nutzen.
 
 ---
 
-## Schritt 1: Trivy installieren (auf dem Control-Plane-Node)
+## Schritt 1: trivy installieren
+
+Installation ins Home-Verzeichnis — kein root noetig:
 
 ```
-ssh root@<control-plane-ip>
-```
+curl -sL https://github.com/aquasecurity/trivy/releases/download/v0.70.0/trivy_0.70.0_Linux-64bit.tar.gz \
+  | tar -xz -C ~/bin trivy
 
-```
-curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-  | sudo sh -s -- -b /usr/local/bin
 trivy --version
 ```
 
----
-
-## Schritt 2: Image scannen — CVEs, kein CIS-Bezug
-
+**Erwartete Ausgabe:**
 ```
-trivy image nginx:1.27
-```
-
-Ausgabe zeigt CVEs in OS-Paketen — aber keine CIS-Benchmark-Nummern.
-Das ist Supply-Chain-Security, nicht Kubernetes-Cluster-Compliance.
-
-Vergleich: minimales non-root Image hat deutlich weniger Findings:
-
-```
-trivy image nginxinc/nginx-unprivileged:1.27
-```
-
-**Fazit:** Je groesser das Base-Image, desto mehr Angriffsfläche.
-Weniger Pakete = weniger CVEs. Deshalb minimal-images und multi-stage builds.
-
----
-
-## Schritt 3: CIS Compliance Check gegen den Cluster
-
-Der Scan laeuft gegen die Kubernetes API — kein Node-Zugriff noetig,
-aber Cluster-Admin-Rechte erforderlich.
-
-```
-trivy k8s --compliance=k8s-cis --report summary cluster
-```
-
-**Erwartete Ausgabe (Auszug):**
-```
-Summary Report for compliance: cis-k8s
-
-┌──────────┬──────────────────────────────────────────────────────────┬────────────┐
-│ ID       │ Title                                                    │ Status     │
-├──────────┼──────────────────────────────────────────────────────────┼────────────┤
-│ 5.2.1    │ Ensure that the cluster has at least one active policy   │ FAIL       │
-│          │ control mechanism in place                               │            │
-├──────────┼──────────────────────────────────────────────────────────┼────────────┤
-│ 5.2.6    │ Minimize the admission of root containers                │ FAIL       │
-├──────────┼──────────────────────────────────────────────────────────┼────────────┤
-│ 5.2.7    │ Minimize the admission of containers with                │ FAIL       │
-│          │ allowPrivilegeEscalation                                 │            │
-└──────────┴──────────────────────────────────────────────────────────┴────────────┘
-```
-
-Detaillierter Report mit allen Findings:
-
-```
-trivy k8s --compliance=k8s-cis --report all cluster 2>/dev/null | less
+Version: 0.70.0
 ```
 
 ---
 
-## Schritt 4: Eigenen Namespace scannen
+## Schritt 2: Cluster-weiter Sicherheitsscan
 
-Fuer den eigenen Namespace koennen Teilnehmer ohne Cluster-Admin-Rechte scannen:
-
-```
-trivy k8s --namespace tln<nr> --report summary all
-```
-
-Was findet Trivy in eurem Namespace — und was hat sich veraendert nachdem ihr
-die pods aus der securitycontext-exercise deployed habt?
+Gesamtuebersicht — Vulnerabilities, Misconfigs und RBAC in einem Lauf:
 
 ```
-# Gehaerteten Pod deployen
-kubectl apply -f ~/manifests/securitycontext/05-pod-hardened.yml -n tln<nr>
+trivy k8s --report=summary
+```
 
-# Scan erneut ausfuehren
-trivy k8s --namespace tln<nr> --report summary all
+Die Ausgabe zeigt drei Bereiche:
+
+```
+Workload Assessment      <- Pods, Deployments, Jobs
+Infra Assessment         <- kube-system, etcd, API-Server
+RBAC Assessment          <- Roles, ClusterRoles, Bindings
+```
+
+Spalten: **C**ritical / **H**igh / **M**edium / **L**ow / **U**nknown
+
+> Beim ersten Aufruf laedt trivy die Vulnerability-Datenbank (~90 MB).
+> Danach immer `--skip-db-update` nutzen um Zeit zu sparen.
+
+---
+
+## Schritt 3: CIS Benchmark Compliance-Report
+
+Der eigentliche Highlight: trivy prueft den Cluster direkt gegen den
+**CIS Kubernetes Benchmark** und zeigt PASS/FAIL pro Control-ID:
+
+```
+trivy k8s --compliance=k8s-cis-1.23 --report=summary --skip-db-update
+```
+
+**Auszug aus der Ausgabe unseres Clusters:**
+
+```
+ID       Severity  Control Name                                          Status  Issues
+1.2.18   LOW       --profiling argument is set to false                  FAIL    1
+1.2.19   LOW       --audit-log-path argument is set                      FAIL    1
+1.2.30   LOW       --encryption-provider-config argument is set          FAIL    1
+5.1.1    HIGH      cluster-admin role only used where required            FAIL    2
+5.1.2    HIGH      Minimize access to secrets                            FAIL    14
+5.1.3    HIGH      Minimize wildcard use in Roles and ClusterRoles       FAIL    8
+5.2.6    HIGH      allowPrivilegeEscalation minimized                    FAIL    15
+5.2.7    MEDIUM    Minimize the admission of root containers             FAIL    16
+5.7.3    HIGH      Apply Security Context to Pods and Containers         FAIL    46
+```
+
+Bekannte Findings aus unseren Uebungen:
+
+| CIS ID | Finding | Unsere Uebung |
+|--------|---------|--------------|
+| 1.2.18 | Profiling aktiv | hardening-control-plane-profiling.md |
+| 1.2.19 | Kein Audit Logging | audit-logging-exercise.md |
+| 1.2.30 | Keine etcd Encryption at Rest | - |
+| 5.1.x  | RBAC-Schwachstellen | rbac-exercise-scanning.md |
+| 5.2.x  | Kein SecurityContext | securitycontext-exercise.md |
+
+Verfuegbare Compliance-Profile:
+
+```
+trivy k8s --help | grep -A8 compliance
+```
+
+```
+--compliance string   Built-in compliance's:
+  - k8s-nsa-1.0          (NSA Kubernetes Hardening Guide)
+  - k8s-cis-1.23         (CIS Kubernetes Benchmark)
+  - eks-cis-1.4          (CIS Amazon EKS)
+  - rke2-cis-1.24        (CIS RKE2)
+  - k8s-pss-baseline-0.1 (Pod Security Standards Baseline)
+```
+
+> Warum `k8s-cis-1.23` und nicht 1.32? Trivy liefert versionierte
+> Compliance-Specs mit — neuere Versionen kommen mit kuenftigen Releases.
+> Die Kernkontrollen von 1.23 gelten aber unveraendert fuer 1.32.
+
+---
+
+## Schritt 4: Nur Misconfigs scannen (schneller)
+
+Ohne Image-CVE-Scan — ideal fuer den taeglichen Check:
+
+```
+trivy k8s --report=summary --skip-db-update --scanners misconfig,rbac
+```
+
+Eigenen Namespace scannen:
+
+```
+trivy k8s --report=summary --skip-db-update \
+  --scanners misconfig \
+  --include-namespaces tln<nr>
 ```
 
 ---
 
-## Vergleich: Trivy k8s vs. kube-bench
+## Schritt 5: Image auf CVEs pruefen
 
-Beide Tools pruefen CIS-Compliance — aber an unterschiedlichen Stellen:
+```
+trivy image --skip-db-update --severity CRITICAL,HIGH nginx:1.27
+```
 
-| | Trivy k8s | kube-bench |
-|-|-----------|------------|
-| Zugriff | Kubernetes API | Direkter Node-Zugriff (SSH / DaemonSet) |
-| Prueft | Workloads, RBAC, Namespace-Konfiguration | Node-Dateiberechtigungen, Prozess-Flags, kubelet-Config |
-| CIS-Abdeckung | Sektion 5 (Policies, Workloads) | Sektion 1 (Control Plane), Sektion 4 (Worker Nodes) |
-| Einsatz | Von der Bastion / aus CI-CD | Auf dem Node selbst |
-| Besonderheit | Findet unsichere laufende Pods | Findet unsichere Node-Konfiguration |
+Image eines laufenden Pods direkt pruefen:
 
-**Zusammen ergeben sie eine vollstaendige CIS-Pruefung:**
-- kube-bench → Infrastruktur-Ebene (Nodes, API-Server-Flags)
-- trivy k8s → Workload-Ebene (Pods, RBAC, Namespaces)
+```
+kubectl get pod nginx -o jsonpath='{.spec.containers[*].image}'
+trivy image --skip-db-update --severity CRITICAL,HIGH nginx:1.27
+```
+
+**Was du siehst:** CVE-ID, betroffenes Paket, installierte Version,
+ob ein Fix verfuegbar ist (`fixed in: ...`).
 
 ---
 
-## Aufraeumen
+## Schritt 6: Kubectl-Queries fuer schnelle manuelle Checks
 
-Trivy hinterlaesst keine Ressourcen im Cluster.
-Falls gehaertete Pods noch laufen:
+### Welche Pods laufen ohne SecurityContext?
 
 ```
-kubectl delete pod pod-hardened -n tln<nr>
+kubectl get pods -A -o json | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for item in data['items']:
+    ns = item['metadata']['namespace']
+    name = item['metadata']['name']
+    psc = item['spec'].get('securityContext', {})
+    if not psc.get('runAsNonRoot') and psc.get('runAsUser', 0) == 0:
+        print(f'KEIN SC: {ns}/{name}')
+" | grep -v "kube-system\|calico"
+```
+
+### Welche Pods mounten automatisch ein SA-Token?
+
+```
+kubectl get pods -A -o json | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for item in data['items']:
+    ns = item['metadata']['namespace']
+    name = item['metadata']['name']
+    if item['spec'].get('automountServiceAccountToken', True):
+        print(f'TOKEN GEMOUNTET: {ns}/{name}')
+" | grep -v "kube-system\|calico"
+```
+
+### Wer hat cluster-admin?
+
+```
+rbac-lookup cluster-admin -o wide
+```
+
+**Ausgabe aus unserem Cluster:**
+```
+SUBJECT                         SCOPE          ROLE
+Group/kubeadm:cluster-admins    cluster-wide   ClusterRole/cluster-admin
 ```
 
 ---
 
-## Zusammenfassung
+## Zusammenfassung: Wann welches Tool?
 
-| Scan | CIS-Kapitel | Ergebnis |
-|------|------------|---------|
-| `trivy image nginx:1.27` | Keins (NIST / Supply Chain) | CVE-Liste mit Schweregrad |
-| `trivy k8s --compliance=k8s-cis` | 1.x, 4.x, 5.x | Pass/Fail pro CIS-Check |
-| `trivy k8s -n tln<nr>` | 5.2.x (Workloads) | Unsichere Pods im Namespace |
+| Situation | Befehl |
+|-----------|--------|
+| CIS Compliance-Report | `trivy k8s --compliance=k8s-cis-1.23 --report=summary` |
+| Schneller Gesamtueberblick | `trivy k8s --report=summary --skip-db-update` |
+| Image auf CVEs | `trivy image --severity CRITICAL,HIGH nginx:1.27` |
+| Nur Misconfigs | `trivy k8s --scanners misconfig --report=summary` |
+| Wer hat cluster-admin? | `rbac-lookup cluster-admin -o wide` |
+| Pods ohne SecurityContext | kubectl + python3 Query (siehe oben) |
 
 ## Referenzen
 
-  * https://aquasecurity.github.io/trivy/
-  * https://aquasecurity.github.io/trivy/latest/docs/compliance/
-  * https://www.cisecurity.org/benchmark/kubernetes (Sektion 5.2)
+  * https://github.com/aquasecurity/trivy
+  * https://trivy.dev/latest/docs/target/kubernetes/
+  * https://trivy.dev/latest/docs/compliance/
+  * https://github.com/FairwindsOps/rbac-lookup
