@@ -101,7 +101,7 @@
      * [Kap. 5.1.2/5.1.6 - RBAC Least Privilege für Entwickler-Namespace](kubernetes-security/rbac-exercise-least-privilege.md)
 
   1. Kubernetes - SecurityContext
-     * [Kap. 5.2 - Pods haerten: non-root, read-only, Capabilities, Seccomp](kubernetes-security/securitycontext-exercise.md)
+     * [Kap. 5.2.2/5.2.4/5.2.6/5.2.9 - Pods haerten: non-root, read-only, Capabilities, Seccomp](kubernetes-security/securitycontext-exercise.md)
 
 
 ## Backlog - Kubernetes 

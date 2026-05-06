@@ -1,4 +1,4 @@
-# SecurityContext - Pods sicher haerten
+# SecurityContext - Pods sicher haerten (CIS 5.2.2 / 5.2.4 / 5.2.6 / 5.2.9)
 
 ## Hintergrund
 
