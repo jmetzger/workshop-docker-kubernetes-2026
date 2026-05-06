@@ -75,6 +75,8 @@
      * [Curl from pod api-server](/kubernetes-advanced/curl-api-server.md)
 
   1. Kubernetes - Hardening (CIS Benchmark)
+     * [Kubernetes Versionen & CIS Benchmark Überblick](kubernetes-security/cis-benchmark-overview.md)
+     * [CIS Kubernetes Benchmark V1.12.0 - PDF (Link vom Trainer)](http://161.35.210.204/CIS_Kubernetes_Benchmark_V1.12.0.pdf)
      * [CIS Benchmark Kubernetes - Worker Node (kube-bench)](kubernetes-security/cis-benchmark-exercise.md)
      * [CIS Benchmark Kubernetes - Control Plane (kube-bench)](kubernetes-security/cis-benchmark-exercise-control-plane.md)
 
