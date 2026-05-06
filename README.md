@@ -74,6 +74,10 @@
      * [Netzwerkverbindung zu pod testen](/tipps-tricks/verbindung-zu-pod-testen.md)
      * [Curl from pod api-server](/kubernetes-advanced/curl-api-server.md)
 
+  1. Kubernetes - Hardening (CIS Benchmark)
+     * [CIS Benchmark Kubernetes - Worker Node (kube-bench)](kubernetes-security/cis-benchmark-exercise.md)
+     * [CIS Benchmark Kubernetes - Control Plane (kube-bench)](kubernetes-security/cis-benchmark-exercise-control-plane.md)
+
 
 
 ## Backlog - Kubernetes 
