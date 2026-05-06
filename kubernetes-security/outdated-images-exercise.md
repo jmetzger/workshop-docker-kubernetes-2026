@@ -1,317 +1,134 @@
-# Veraltete Images finden und via private Registry aktualisieren
+# Veraltete Images erkennen mit version-checker
 
 ## Hintergrund
 
-In Produktionsclustern laeuft typischerweise kein direkter Internetzugang von
-den Nodes — alle Images kommen aus einer **privaten Registry** (Harbor, Nexus,
-Artifactory). Das stellt ein besonderes Problem fuer Image-Updates dar:
-
-```
-Internet          Jump-Host           Private Registry       Cluster
-(Docker Hub)  →   (hat Zugang)    →   (intern erreichbar) →  (Nodes)
-nginx:1.28        pull + scan          push                    pull
-```
-
-Ohne diesen Prozess bleiben Images im Cluster veraltet — mit bekannten CVEs
-die laengst gefixt waeren.
+**version-checker** (jetstack, Apache 2.0) laeuft als Pod im Cluster, beobachtet
+alle laufenden Container und vergleicht deren Image-Versionen mit der jeweiligen
+Registry. Das Ergebnis ist eine Prometheus-Metrik die man direkt mit kubectl
+abfragen kann — kein Prometheus, kein Grafana noetig.
 
 ---
 
-## Schritt 1: Inventarisierung — Was laeuft ueberhaupt?
-
-### Alle Images cluster-weit auflisten
+## Schritt 1: version-checker deployen
 
 ```
-kubectl get pods -A \
-  -o jsonpath='{range .items[*]}{.metadata.namespace}{"\t"}{.spec.containers[*].image}{"\n"}{end}' \
-  | sort -u
-```
-
-### Kompakter: nur die Image-Namen ohne Namespace
-
-```
-kubectl get pods -A \
-  -o jsonpath='{range .items[*]}{.spec.containers[*].image}{"\n"}{end}' \
-  | sort -u
-```
-
-### Init-Container nicht vergessen
-
-```
-kubectl get pods -A \
-  -o jsonpath='{range .items[*]}{.spec.initContainers[*].image}{"\n"}{end}' \
-  | sort -u | grep -v "^$"
-```
-
----
-
-## Schritt 2: Anti-Pattern finden — latest-Tags und fehlende Tags
-
-`latest` ist gefaehrlich: man weiss nicht welche Version genau laeuft,
-Updates passieren unkontrolliert beim naechsten Pull.
-
-### latest-Tags im Cluster finden
-
-```
-kubectl get pods -A -o json | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-for item in data['items']:
-    ns = item['metadata']['namespace']
-    name = item['metadata']['name']
-    for c in item['spec'].get('containers', []):
-        img = c['image']
-        if img.endswith(':latest') or ':' not in img:
-            print(f'LATEST TAG: {ns}/{name} -> {img}')
-"
-```
-
-**Erwartetes Ergebnis** (Beispiel aus unserem Cluster):
-```
-LATEST TAG: default/nginx -> nginx
-```
-
-`nginx` ohne Tag ist equivalent zu `nginx:latest` — man weiss nicht
-welche Paketversionen darin sind.
-
-### Images mit SHA-Digest pruefen (sichere Alternative zu Tags)
-
-```
-kubectl get pods -A \
-  -o jsonpath='{range .items[*]}{.spec.containers[*].image}{"\n"}{end}' \
-  | sort -u | grep "@sha256" | head -5
-```
-
-SHA-Digests sind unveraenderlich — sie zeigen ob ein Image wirklich
-unveraendert geblieben ist, auch wenn der Tag ueberschrieben wurde.
-Wenn keine SHA-Digest-Images laufen, gibt der Befehl nichts aus.
-
----
-
-## Schritt 3: Test-Deployment mit veralteter Version
-
-Namespace erstellen und ein Deployment mit einer aelteren nginx-Version starten:
-
-```
-kubectl create namespace img-<dein-name>
+kubectl apply -k https://github.com/jetstack/version-checker/deploy/yaml
 ```
 
 ```
-cd
-mkdir -p manifests/img
-cd manifests/img
+namespace/version-checker created
+serviceaccount/version-checker created
+clusterrole.rbac.authorization.k8s.io/version-checker created
+clusterrolebinding.rbac.authorization.k8s.io/version-checker created
+service/version-checker created
+deployment.apps/version-checker created
+```
+
+Standardmaessig prueft version-checker nur Pods mit einer opt-in Annotation.
+Mit `--test-all-containers` prueft er alle Pods im Cluster automatisch:
+
+```
+kubectl -n version-checker patch deployment version-checker \
+  --type=json \
+  -p='[{"op":"add","path":"/spec/template/spec/containers/0/args","value":["--test-all-containers"]}]'
+```
+
+Warten bis der Pod bereit ist:
+
+```
+kubectl -n version-checker rollout status deployment/version-checker
 ```
 
 ```
-# vi 01-deployment-alt.yml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-alt
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: nginx-alt
-  template:
-    metadata:
-      labels:
-        app: nginx-alt
-    spec:
-      containers:
-      - name: nginx
-        image: nginx:1.24
-        ports:
-        - containerPort: 80
-```
-
-```
-kubectl apply -f . -n img-<dein-name>
-kubectl get pods -n img-<dein-name>
-```
-
-Welches Image laeuft genau?
-
-```
-kubectl get pods -n img-<dein-name> \
-  -o jsonpath='{range .items[*]}{.spec.containers[*].image}{"\n"}{end}'
+deployment "version-checker" successfully rolled out
 ```
 
 ---
 
-## Schritt 4: Update-Workflow fuer private Registry (Theorie)
+## Schritt 2: Ergebnisse abfragen
 
-Dieser Schritt laeuft in Produktion so ab — im Workshop fuehren wir
-ihn in Schritt 5 vereinfacht durch.
-
-### Der Prozess (drei Stationen)
-
-**Station 1: Jump-Host (hat Internetzugang)**
+kubectl kann den Metrics-Endpunkt direkt ueber den API-Server proxyen —
+kein separater Prozess noetig:
 
 ```
-# Neue Version pullen
-docker pull nginx:1.27
-
-# Scannen BEVOR es in die Registry kommt
-trivy image --severity CRITICAL,HIGH nginx:1.27
-
-# Fuer private Registry taggen
-docker tag nginx:1.27 registry.intern:5000/nginx:1.27
+kubectl get --raw \
+  /api/v1/namespaces/version-checker/services/version-checker:8080/proxy/metrics \
+  | grep version_checker_is_latest_version
 ```
 
-**Station 2: Private Registry**
+Nur veraltete Images (`value = 0` bedeutet: nicht aktuell):
 
 ```
-# Nur bei gruener Scan-Ampel pushen
-docker push registry.intern:5000/nginx:1.27
+kubectl get --raw \
+  /api/v1/namespaces/version-checker/services/version-checker:8080/proxy/metrics \
+  | grep "version_checker_is_latest_version{" | grep " 0$"
 ```
 
-**Station 3: Cluster — Deployment aktualisieren**
-
+**Beispielausgabe aus unserem Cluster:**
 ```
-kubectl set image deployment/nginx-alt \
-  nginx=registry.intern:5000/nginx:1.27 \
-  -n img-<dein-name>
-```
-
-Rollout-Status pruefen:
-
-```
-kubectl rollout status deployment/nginx-alt -n img-<dein-name>
+...{container="calico-apiserver",current_version="v3.31.2",latest_version="v3.32.0",...} 0
+...{container="coredns",current_version="v1.13.1",latest_version="v1.14.3",...} 0
+...{container="nginx",current_version="sha256:6e234...",latest_version="trixie-perl@sha256:3d55...",image="nginx",...} 0
 ```
 
-Image im laufenden Pod verifizieren:
-
-```
-kubectl get pods -n img-<dein-name> \
-  -o jsonpath='{range .items[*]}{.spec.containers[*].image}{"\n"}{end}'
-```
+Jede Zeile enthaelt `current_version` (was laeuft) und `latest_version` (was
+in der Registry aktuell ist).
 
 ---
 
-## Schritt 5: Praxis — Image im Deployment aktualisieren
+## Schritt 3: Abfragefehler anzeigen
 
-Da im Workshop keine private Registry vorhanden ist, verwenden wir
-`kubectl set image` direkt mit einem neueren Docker-Hub-Tag.
-In Produktion wuerde hier das private-Registry-Tag stehen.
-
-```
-kubectl set image deployment/nginx-alt nginx=nginx:1.27 -n img-<dein-name>
-```
-
-Rollout beobachten (warten bis fertig):
+Nicht jede Registry kann version-checker automatisch abfragen — `registry.k8s.io`
+zum Beispiel erlaubt keine oeffentliche Tag-Suche:
 
 ```
-kubectl rollout status deployment/nginx-alt -n img-<dein-name>
+kubectl get --raw \
+  /api/v1/namespaces/version-checker/services/version-checker:8080/proxy/metrics \
+  | grep version_checker_image_failures_total | grep -v "^#"
 ```
 
-Image im laufenden Pod verifizieren (erst NACH rollout status ausfuehren —
-waehrend des Rollouts laufen kurz beide Versionen parallel):
-
+**Beispiel:**
 ```
-kubectl get pods -n img-<dein-name> \
-  -o jsonpath='{range .items[*]}{.spec.containers[*].image}{"\n"}{end}'
+version_checker_image_failures_total{container="kube-apiserver",image="registry.k8s.io/kube-apiserver:v1.35.2",...} 1
+version_checker_image_failures_total{container="etcd",image="registry.k8s.io/etcd:3.6.6-0",...} 1
 ```
 
-**Erwartete Ausgabe:**
-```
-nginx:1.27
-```
-
-Rollout-History — zeigt beide Revisionen:
-
-```
-kubectl rollout history deployment/nginx-alt -n img-<dein-name>
-```
-
-```
-REVISION  CHANGE-CAUSE
-1         <none>
-2         <none>
-```
+Das sind bekannte Grenzen — nicht jede Registry unterstuetzt die Docker
+Registry API v2 fuer Tag-Listings.
 
 ---
 
-## Schritt 6: Was tun wenn das Image kritische CVEs hat?
+## Private Registry
 
-Wenn trivy CRITICAL-CVEs findet und kein Fix verfuegbar ist:
-
-| Option | Beschreibung |
-|--------|-------------|
-| **Warten auf Upstream** | Hersteller muss Basis-Image aktualisieren |
-| **Eigenes Image bauen** | FROM nginx:1.27 mit eigenen Patches obendrauf |
-| **Schicht-Update** | `apt-get upgrade` im Dockerfile direkt (kurzfristig) |
-| **Deployment stoppen** | Bei kritischem Risiko — lieber kein Service als ein verwundbarer |
-
-### Schicht-Update als Ueberbrueckung
+version-checker unterstuetzt beliebige private Registries (Harbor, Nexus,
+Artifactory) ueber Umgebungsvariablen im Deployment. Der `<NAME>`-Suffix
+erlaubt mehrere Registries gleichzeitig:
 
 ```
-# vi Dockerfile
-FROM nginx:1.24
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+VERSION_CHECKER_SELFHOSTED_HOST_INTERN=registry.intern:5000
+VERSION_CHECKER_SELFHOSTED_USERNAME_INTERN=nutzer
+VERSION_CHECKER_SELFHOSTED_PASSWORD_INTERN=passwort
 ```
 
-```
-docker build -t registry.intern:5000/nginx-patched:1.24-fixed .
-trivy image registry.intern:5000/nginx-patched:1.24-fixed
-docker push registry.intern:5000/nginx-patched:1.24-fixed
-```
-
----
-
-## Schritt 7: Automatisierung — Renovate in Air-Gapped Umgebungen
-
-**Renovate** (Open Source, Apache 2.0) kann auch in geschlossenen Umgebungen
-eingesetzt werden:
-
-```
-Renovate laeuft als Job im Cluster
-         ↓
-prueft Kubernetes-Manifeste auf Image-Tags
-         ↓
-fragt interne Registry ab (Harbor/Nexus API)
-         ↓
-oeffnet automatisch Pull Requests bei neuen Tags
-```
-
-Beispiel-Konfiguration `renovate.json` fuer eine interne Registry:
-
-```
-{
-  "registryAliases": {
-    "docker.io": "registry.intern:5000"
-  },
-  "hostRules": [
-    {
-      "matchHost": "registry.intern:5000",
-      "username": "renovate-bot",
-      "password": "{{ secrets.REGISTRY_PASSWORD }}"
-    }
-  ]
-}
-```
+Danach prueft version-checker Images von `registry.intern:5000/...` genauso
+wie oeffentliche Images — `latest_version` kommt dann aus der internen Registry.
+Das ist der Standardweg in Air-Gapped Umgebungen.
 
 ---
 
 ## Aufraeumen
 
 ```
-kubectl delete namespace img-<dein-name>
+kubectl delete -k https://github.com/jetstack/version-checker/deploy/yaml
 ```
 
 ---
 
-## Zusammenfassung: Checkliste fuer Image-Updates im isolierten Cluster
+## Zusammenfassung
 
-| Schritt | Aktion | Wer |
-|---------|--------|-----|
-| 1. Inventarisierung | `kubectl get pods -A -o jsonpath=...` | Ops |
-| 2. latest-Tags finden | kubectl + python3 Query | Ops |
-| 3. Neue Version pruefen | `docker pull` + `trivy image` | Ops/Security |
-| 4. In private Registry pushen | `docker tag` + `docker push` | Ops |
-| 5. Deployment aktualisieren | `kubectl set image` oder Manifest-Update | DevOps |
-| 6. Rollout verifizieren | `kubectl rollout status` | Ops |
-| 7. Automatisieren | Renovate selbst-hostbar im Cluster | Platform-Team |
-
-**Kernregel:** Nie direkt aus Docker Hub in den Cluster — immer ueber eine
-private Registry als Schleuse, mit Scan-Gate dazwischen.
+| Was | Befehl |
+|-----|--------|
+| Alle Images mit Status | `kubectl get --raw .../proxy/metrics \| grep is_latest` |
+| Nur veraltete Images | `... \| grep is_latest \| grep ' 0$'` |
+| Abfragefehler | `... \| grep failures_total \| grep -v '^#'` |
+| Private Registry | `VERSION_CHECKER_SELFHOSTED_*` ENV im Deployment |

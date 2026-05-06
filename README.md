@@ -56,7 +56,11 @@
      * [Services - Aufbau](/kubernetes/services-aufbau.md)
      * [kubectl/manifest/service](/kubectl-examples/03b-service.md)
      * DaemonSets (Devs/Ops)
+     * [Anatomie einer Webanwendung](anatomie-einer-webanwendung.md)
      * [Hintergrund Ingress](/kubernetes/ingress.md) 
+     * [Info: Traefik Ingress Controller installieren (helm)](ingress/traefik/install-with-helm.md)
+     * [Übung: Ingress mit Traefik und Hostnamen (Schritt 1+5)](kubectl-examples/04-ingress-traefik-with-hostnames-deployment.md)
+     * [Übung: HTTPS/TLS mit Let's Encrypt - cert-manager (Schritt 3-5)](ingress/https-letsencrypt-ingress-traefik.md#schritt-3-ingress-objekt-mit-tls-erstellen)
      * [Ingress Controller auf Digitalocean (doks) mit helm installieren](/digitalocean/ingress-auf-digitalocean-mit-helm.md)
      * [Documentation for default ingress nginx](https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/)
      * [Beispiel Ingress](/kubectl-examples/04-ingress-nginx.md)
@@ -67,6 +71,7 @@
      * [ConfigMap Example](/kubectl-examples/06-configmap.md)
      * [Configmap MariaDB - Example](kubectl-examples/06a-configmap-mariadb.md)
      * [Configmap MariaDB my.cnf](kubectl-examples/06b-mariadb-configmap-configfile.md)
+     * [Übung: Secrets mit secretRef - MariaDB](kubectl-examples/07-mariadb-secret.md)
 
   1. Kubernetes - Wartung / Debugging 
      * [kubectl drain/uncordon](/kubectl/uncordon-drain.md)
@@ -74,12 +79,21 @@
      * [Netzwerkverbindung zu pod testen](/tipps-tricks/verbindung-zu-pod-testen.md)
      * [Curl from pod api-server](/kubernetes-advanced/curl-api-server.md)
 
-  1. Kubernetes - Secrets Management (Hashicorp Vault)
+  1. Kubernetes - Secrets Management (Hashicorp Vault / OpenBao)
      * [Überblick Hashicorp Vault (VSO, Sidecar, Volumes)](hashicorp-vault/overview.md)
      * [Übung: Vault Secrets Operator (VSO) mit Kubernetes](hashicorp-vault/exercise-vso.md)
+     * [Info: OpenBao/Hashicorp Vault - Sicherheitsrelevante Findings](hashicorp-vault-openbao/security-relevante-findings.md)
+
+  1. Kubernetes - Storage / CSI
+     * [CSI - Überblick und Vorteile](kubernetes-csi/overview.md)
+     * [CSI Treiber Liste](https://kubernetes-csi.github.io/docs/drivers.html)
+     * [Übung: NFS mit CSI-Treiber (Schritt 3+4)](kubernetes-csi/nfs-exercise.md#step-3-persistent-volume-claim)
 
   1. Trainingszugänge / Clusterumgebung
      * [Clusterumgebung & Zugänge (Bastion, ssh cp, ssh worker, kubectl)](kubernetes-security/cluster-access.md)
+
+  1. Kubernetes - Veraltete Images
+     * [Kap. 5.x - Veraltete Images finden mit version-checker](kubernetes-security/outdated-images-exercise.md)
 
   1. Kubernetes - Hardening Überblick
      * [Kubernetes Versionen & CIS Benchmark Überblick](kubernetes-security/cis-benchmark-overview.md)
@@ -108,9 +122,6 @@
 
   1. Kubernetes - Pod Security Admission (PSA)
      * [Kap. 5.2.1 - PSA: Namespace-weite Durchsetzung von Pod Security Standards](kubernetes-security/pod-security-admission.md)
-
-  1. Kubernetes - Veraltete Images
-     * [Kap. 5.x - Veraltete Images finden und via private Registry aktualisieren](kubernetes-security/outdated-images-exercise.md)
 
   1. Kubernetes - Security Scanning mit Trivy
      * [CIS 1.x/4.x/5.x - Trivy: Image-CVEs und Cluster-Compliance-Check](kubernetes-security/trivy-exercise.md)
