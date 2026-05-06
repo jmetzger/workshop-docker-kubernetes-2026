@@ -88,6 +88,7 @@
      * [CIS Benchmark Kubernetes - Control Plane (kube-bench)](kubernetes-security/cis-benchmark-exercise-control-plane.md)
 
   1. Kubernetes - RBAC Hardening
+     * [RBAC Grundlagen - Roles, Bindings, Subjects, Verbs](kubernetes-security/rbac-overview.md)
      * [RBAC Scanning - Schwachstellen mit rbac-lookup finden (CIS 5.1)](kubernetes-security/rbac-exercise-scanning.md)
      * [RBAC - Least Privilege für Entwickler-Namespace (CIS 5.1.2/5.1.6)](kubernetes-security/rbac-exercise-least-privilege.md)
 
