@@ -109,6 +109,9 @@
   1. Kubernetes - Pod Security Admission (PSA)
      * [Kap. 5.2.1 - PSA: Namespace-weite Durchsetzung von Pod Security Standards](kubernetes-security/pod-security-admission.md)
 
+  1. Kubernetes - Veraltete Images
+     * [Kap. 5.x - Veraltete Images finden und via private Registry aktualisieren](kubernetes-security/outdated-images-exercise.md)
+
   1. Kubernetes - Security Scanning mit Trivy
      * [CIS 1.x/4.x/5.x - Trivy: Image-CVEs und Cluster-Compliance-Check](kubernetes-security/trivy-exercise.md)
 
