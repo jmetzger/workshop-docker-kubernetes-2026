@@ -195,6 +195,42 @@ Group/kubeadm:cluster-admins    cluster-wide   ClusterRole/cluster-admin
 
 ---
 
+## Exkurs: CIS 5.1.2 - Warum es nicht vollstaendig fixbar ist
+
+CIS 5.1.2 ("Minimize access to secrets") zeigt in unserem Cluster 14 Findings.
+Die betroffenen Rollen:
+
+| ClusterRole | Secrets-Zugriff | Wer stellt sie wieder her? |
+|-------------|----------------|---------------------------|
+| `cluster-admin` | `*` auf `*` | kube-controller-manager |
+| `admin` | `get/list/watch` | kube-controller-manager |
+| `edit` | `get/list/watch` | kube-controller-manager |
+| `tigera-operator` | `get/list/watch` | tigera-operator selbst |
+
+**kube-controller-manager** stellt Built-in Rollen bei jedem Start automatisch
+wieder her — das ist by Design. Eine Aenderung waere nach dem naechsten
+Controller-Neustart weg.
+
+**tigera-operator** hat seinen eigenen Reconciliation Loop und braucht
+Secrets-Zugriff genuinen fuer TLS-Zertifikate und Calico-Credentials.
+Auch hier: Aenderung wird wiederhergestellt.
+
+**Der einzige echte Hebel** ist zu pruefen, ob diese Rollen unnoetig gebunden sind:
+
+```
+rbac-lookup admin -o wide
+rbac-lookup edit -o wide
+```
+
+Sind diese Rollen an niemanden gebunden der sie nicht braucht — ist das Finding
+ein strukturelles **False-Positive** des Standard-Setups.
+
+In der Praxis: **Risk Acceptance** — dokumentieren warum das Finding nicht fixbar
+ist und dass das Risiko bekannt und bewertet wurde. Das ist legitimer
+Security-Prozess.
+
+---
+
 ## Schritt 7: Veraltete Images im Cluster finden
 
 "Veraltet" hat zwei Bedeutungen — beide sind relevant:
