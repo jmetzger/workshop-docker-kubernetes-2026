@@ -195,6 +195,95 @@ Group/kubeadm:cluster-admins    cluster-wide   ClusterRole/cluster-admin
 
 ---
 
+## Schritt 7: Veraltete Images im Cluster finden
+
+"Veraltet" hat zwei Bedeutungen — beide sind relevant:
+
+| Was | Bedeutung | Tool |
+|-----|-----------|------|
+| Pakete mit bekannten CVEs die gefixt wurden | Image hat CVEs, Upgrade wuerde sie beheben | `trivy image --ignore-unfixed` |
+| Neuere Image-Tags verfuegbar (z.B. 1.24 → 1.27) | Kein eingebautes Kubernetes-Tool, braucht Registry-Abfrage | Renovate / Dependabot |
+
+### Alle laufenden Images auflisten
+
+Erst mal sehen, was ueberhaupt im Cluster laeuft:
+
+```
+kubectl get pods -A \
+  -o jsonpath='{range .items[*]}{.metadata.namespace}{"\t"}{.spec.containers[*].image}{"\n"}{end}' \
+  | sort -u
+```
+
+### latest-Tags finden — Anti-Pattern
+
+`latest` bedeutet: man weiss nie welche Version genau laeuft, Updates sind unkontrolliert.
+
+```
+kubectl get pods -A -o json | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for item in data['items']:
+    ns = item['metadata']['namespace']
+    name = item['metadata']['name']
+    for c in item['spec'].get('containers', []):
+        img = c['image']
+        if img.endswith(':latest') or ':' not in img:
+            print(f'LATEST TAG: {ns}/{name} -> {img}')
+"
+```
+
+### Nur fixbare CVEs anzeigen (`--ignore-unfixed`)
+
+Mit `--ignore-unfixed` zeigt trivy ausschliesslich Pakete, fuer die ein Update
+bereits verfuegbar ist — das ist die direkt umsetzbare Liste:
+
+```
+trivy image --ignore-unfixed --severity CRITICAL,HIGH --skip-db-update nginx:1.27
+```
+
+Die Spalte `FIXED-VERSION` zeigt genau, auf welche Paketversion man upgraden muesste.
+Ist das Basisimage zu alt, ist ein Image-Update der einzige Weg.
+
+### Alle Cluster-Images automatisch scannen
+
+```
+kubectl get pods -A \
+  -o jsonpath='{range .items[*]}{.spec.containers[*].image}{"\n"}{end}' \
+  | sort -u \
+  | while read img; do
+      result=$(trivy image --ignore-unfixed --severity CRITICAL,HIGH \
+               --skip-db-update --quiet "$img" 2>/dev/null \
+               | grep -c "CRITICAL\|HIGH" || true)
+      if [ "$result" -gt 0 ]; then
+          echo "FINDINGS ($result):  $img"
+      else
+          echo "OK:                 $img"
+      fi
+  done
+```
+
+**Beispielausgabe:**
+```
+FINDINGS (12):  nginx:1.27
+OK:             nginxinc/nginx-unprivileged:1.27
+FINDINGS (3):   bitnami/nginx:1.25
+```
+
+### Grenze von Trivy: Image-Tag-Updates
+
+Trivy prueft **Paket-CVEs innerhalb eines Images** — es weiss aber nicht, dass
+z.B. `nginx:1.24` existiert und `nginx:1.27` aktueller ist.
+Fuer Tag-Level-Updates (Dockerfile, Kubernetes-Manifeste) braucht man:
+
+```
+Renovate (Open Source, selbst-hostbar)
+Dependabot (GitHub, nur GitHub-Repos)
+```
+
+Beide eroeffnen automatisch Pull Requests wenn neue Image-Tags verfuegbar sind.
+
+---
+
 ## Zusammenfassung: Wann welches Tool?
 
 | Situation | Befehl |
@@ -205,6 +294,11 @@ Group/kubeadm:cluster-admins    cluster-wide   ClusterRole/cluster-admin
 | Nur Misconfigs | `trivy k8s --scanners misconfig --report=summary` |
 | Wer hat cluster-admin? | `rbac-lookup cluster-admin -o wide` |
 | Pods ohne SecurityContext | kubectl + python3 Query (siehe oben) |
+| Alle laufenden Images auflisten | kubectl jsonpath Query (siehe oben) |
+| latest-Tags im Cluster finden | kubectl + python3 Query (siehe oben) |
+| Fixbare CVEs in einem Image | `trivy image --ignore-unfixed --severity CRITICAL,HIGH <image>` |
+| Alle Cluster-Images auf fixbare CVEs | kubectl + while-Schleife + trivy (siehe oben) |
+| Neuere Image-Tags verfuegbar? | Renovate / Dependabot (kein Trivy-Feature) |
 
 ## Referenzen
 
