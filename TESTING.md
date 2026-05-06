@@ -23,6 +23,7 @@
 | `rbac-exercise-least-privilege.md` | - | - | Morgen Tag 4 |
 | `securitycontext-exercise.md` | ja | PASS | Alle 5 Schritte verifiziert (siehe unten) |
 | `networkpolicy-exercise.md` | ja | PASS | Alle 3 Szenarien verifiziert (siehe unten) |
+| `security-scanning.md` | ja | PASS | trivy v0.70.0 als tln1 installiert, Cluster-Scan und Image-Scan verifiziert |
 | `pod-security-admission.md` | - | - | Morgen Tag 4 |
 | `pod-hardening-lab.md` | - | - | Freitag Abschluss-Lab |
 
