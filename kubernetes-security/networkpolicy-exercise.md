@@ -172,18 +172,11 @@ kubectl apply -f 02-allow-dns.yml -n default
 DNS testen:
 
 ```
-kubectl exec -n default frontend -- nslookup backend
+#dns klappt, aber http-traffic ist noch gesperrt 
+kubectl exec -n default frontend -- curl -v -s --max-time 5 http://backend
 ```
 
 **Erwartete Ausgabe:** IP-Adresse wird aufgeloest.
-
-HTTP zu Backend schlaegt aber noch fehl:
-
-```
-kubectl exec -n default frontend -- curl -s --max-time 5 http://backend
-```
-
-**Erwarteter Fehler:** Timeout — HTTP-Traffic noch gesperrt.
 
 ---
 
@@ -249,7 +242,7 @@ kubectl exec -n default frontend -- curl -s http://backend | grep title
 Externer Traffic bleibt gesperrt (Egress-Deny greift):
 
 ```
-kubectl exec -n default frontend -- curl -s --max-time 5 http://example.com
+kubectl exec -n default frontend -- curl -s --max-time 5 http://www.google.de
 ```
 
 **Erwarteter Fehler:** Timeout.
