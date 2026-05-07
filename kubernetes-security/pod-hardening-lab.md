@@ -1,7 +1,6 @@
 # Lab: Pod Hardening & Kubernetes Security
 
 **Schwierigkeit:** Mittel
-**Dauer:** ca. 90-120 Minuten
 **Voraussetzungen:** SecurityContext-Uebung, NetworkPolicy-Uebung, RBAC-Uebung absolviert
 
 ---
