@@ -113,7 +113,7 @@
      * [Kap. 5.2.1 - PSA: Namespace-weite Durchsetzung von Pod Security Standards](kubernetes-security/pod-security-admission.md)
 
   1. Kubernetes - SecurityContext
-     * [Kap. 5.2.2/5.2.4/5.2.6/5.2.9 - Pods haerten: non-root, read-only, Capabilities, Seccomp](kubernetes-security/securitycontext-exercise.md)
+     * [Kap. 5.2.2/5.2.4/5.2.6/5.2.7/5.2.9 - Pods haerten: non-root, read-only, Capabilities, Seccomp](kubernetes-security/securitycontext-exercise.md)
 
   1. Kubernetes - NetworkPolicy
      * [Kap. 5.3 - Pod-Traffic absichern: Default-Deny, DNS, Pod-zu-Pod](kubernetes-security/networkpolicy-exercise.md)

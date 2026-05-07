@@ -1,4 +1,4 @@
-# SecurityContext - Pods sicher haerten (CIS 5.2.2 / 5.2.4 / 5.2.6 / 5.2.9)
+# SecurityContext - Pods sicher haerten (CIS 5.2.2 / 5.2.4 / 5.2.6 / 5.2.7 / 5.2.9)
 
 ## Hintergrund
 
@@ -8,11 +8,11 @@ ein Angreifer, der aus dem Container ausbricht, hat damit direkt root-Zugriff au
 
 | Einstellung | Beschreibung | CIS |
 |-------------|-------------|-----|
-| `runAsNonRoot: true` | Container darf nicht als root starten | 5.2.6 |
-| `runAsUser` | Konkrete UID setzen | 5.2.6 |
+| `runAsNonRoot: true` | Container darf nicht als root starten | 5.2.7 |
+| `runAsUser` | Konkrete UID setzen (nicht 0) | 5.2.7 |
 | `readOnlyRootFilesystem` | Filesystem ist schreibgeschuetzt | 5.2.4 |
-| `allowPrivilegeEscalation: false` | Kein sudo/setuid moeglich | 5.2.5 |
-| `capabilities.drop: ["ALL"]` | Alle Linux-Capabilities entfernen | 5.2.7 |
+| `allowPrivilegeEscalation: false` | Kein sudo/setuid moeglich | 5.2.6 |
+| `capabilities.drop: ["ALL"]` | Alle Linux-Capabilities entfernen | 5.2.9 |
 | `seccompProfile: RuntimeDefault` | Syscall-Filter aktivieren | 5.2.2 |
 
 ---
@@ -344,11 +344,11 @@ kubectl delete pod pod-root pod-nonroot pod-readonly pod-nocaps pod-hardened -n 
 
 | Was | Wo konfiguriert | Warum |
 |-----|----------------|-------|
-| `runAsNonRoot` / `runAsUser` | `pod.spec.securityContext` | Kein root im Container |
-| `readOnlyRootFilesystem` | `container.securityContext` | Kein Schreiben ins Filesystem |
-| `allowPrivilegeEscalation: false` | `container.securityContext` | Kein sudo/setuid |
-| `capabilities.drop: ["ALL"]` | `container.securityContext` | Keine Kernel-Privilegien |
-| `seccompProfile: RuntimeDefault` | `pod.spec.securityContext` | Syscall-Filter |
+| `runAsNonRoot` / `runAsUser` | `pod.spec.securityContext` | Kein root im Container (CIS 5.2.7) |
+| `readOnlyRootFilesystem` | `container.securityContext` | Kein Schreiben ins Filesystem (CIS 5.2.4) |
+| `allowPrivilegeEscalation: false` | `container.securityContext` | Kein sudo/setuid (CIS 5.2.6) |
+| `capabilities.drop: ["ALL"]` | `container.securityContext` | Keine Kernel-Privilegien (CIS 5.2.9) |
+| `seccompProfile: RuntimeDefault` | `pod.spec.securityContext` | Syscall-Filter (CIS 5.2.2) |
 | `emptyDir` Volumes | `volumes` + `volumeMounts` | Schreibbare Verzeichnisse fuer die App |
 | `nginxinc/nginx-unprivileged` | Image | nginx ohne root-Anforderung |
 
