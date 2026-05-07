@@ -43,6 +43,10 @@ cd manifests/pod-hardening
 ## Ausgangslage (unsicher)
 
 ```
+nano 00-baseline.yml
+```
+
+```
 # vi 00-baseline.yml
 apiVersion: v1
 kind: Pod
