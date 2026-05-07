@@ -50,7 +50,49 @@ Your current version is: v4.0.6
 
 ---
 
-## Schritt 3: Control-Plane-Manifests anschauen
+## Schritt 3: Verfuegbare Frameworks anzeigen
+
+Welche Frameworks kennt kubescape?
+
+```
+kubescape list frameworks
+```
+
+**Erwartete Ausgabe:**
+```
+╭──────────────────────╮
+│ Supported frameworks │
+├──────────────────────┤
+│      AllControls     │
+│       ArmoBest       │
+│      DevOpsBest      │
+│         MITRE        │
+│          NSA         │
+│         SOC2         │
+│    cis-aks-t1.2.0    │
+│    cis-aks-t1.8.0    │
+│    cis-eks-t1.7.0    │
+│    cis-eks-t1.8.0    │
+│      cis-v1.10.0     │
+│      cis-v1.12.0     │
+╰──────────────────────╯
+```
+
+Kurze Orientierung — welches Framework fuer welchen Zweck:
+
+| Framework | Fokus |
+|-----------|-------|
+| NSA | Breite Grundhaertung, guter Einstiegspunkt |
+| MITRE | Angreiferverhalten (Taktiken und Techniken) |
+| cis-v1.10.0 / cis-v1.12.0 | Detaillierte nummerierte CIS-Controls fuer Kubernetes |
+| ArmoBest | NSA + MITRE kombiniert, empfohlen fuer schnellen Ueberblick |
+| cis-aks-* / cis-eks-* | Cloud-spezifische Varianten (Azure AKS, AWS EKS) |
+| SOC2 | Regulatorische Compliance |
+| DevOpsBest | Reliabilitaet und Operabilitaet |
+
+---
+
+## Schritt 5: Control-Plane-Manifests anschauen
 
 Was liegt dort ueberhaupt?
 
@@ -72,7 +114,7 @@ controller-manager und scheduler vollstaendig.
 
 ---
 
-## Schritt 4: Alle Manifests auf einmal scannen
+## Schritt 6: Alle Manifests auf einmal scannen
 
 ```
 kubescape scan /etc/kubernetes/manifests/
@@ -103,7 +145,7 @@ welche Pods das groesste Risiko darstellen wuerden wenn sie kompromittiert werde
 
 ---
 
-## Schritt 5: Mit NSA-Framework scannen
+## Schritt 7: Mit NSA-Framework scannen
 
 Jetzt gezielt gegen das NSA-Framework pruefen und den Compliance-Score sehen:
 
@@ -137,7 +179,9 @@ Resource Limits und laufen als root.
 
 ---
 
-## Schritt 6: CIS-Framework gezielt pruefen
+## Schritt 8: CIS-Framework gezielt pruefen (online und offline)
+
+### Online-Modus
 
 ```
 kubescape scan framework cis-v1.10.0 /etc/kubernetes/manifests/
@@ -157,9 +201,52 @@ Resource Summary   78.79%
 CIS hat viele Controls die nur manuell geprueft werden koennen
 (markiert als `Action Required *` — kein automatischer Check moeglich).
 
+### Offline-Modus
+
+In air-gapped Umgebungen oder wenn kein Internet verfuegbar ist, koennen
+alle Frameworks und Controls vorab heruntergeladen werden.
+
+**Einmalig: Alle Daten herunterladen (benoetigt Internetzugang):**
+
+```
+kubescape download artifacts
+```
+
+**Erwartete Ausgabe:**
+```
+Downloaded  attack-tracks    /root/.kubescape/attack-tracks.json
+Downloaded  controls-inputs  /root/.kubescape/controls-inputs.json
+Downloaded  exceptions       /root/.kubescape/exceptions.json
+Downloaded  framework  NSA           /root/.kubescape/nsa.json
+Downloaded  framework  cis-v1.10.0   /root/.kubescape/cis-v1.10.0.json
+Downloaded  framework  cis-v1.12.0   /root/.kubescape/cis-v1.12.0.json
+Downloaded  framework  MITRE         /root/.kubescape/mitre.json
+...
+```
+
+Was wurde gespeichert?
+
+```
+ls ~/.kubescape/
+```
+
+**Danach: Scan ohne Internetzugang mit `--use-artifacts-from`:**
+
+```
+kubescape scan framework cis-v1.10.0 /etc/kubernetes/manifests/ \
+  --use-artifacts-from ~/.kubescape/
+```
+
+Das Ergebnis ist identisch — kubescape liest alle Policy-Daten aus dem
+lokalen Cache statt sie vom Server abzurufen.
+
+> **Tipp fuer CI/CD:** Die `~/.kubescape/*.json`-Dateien koennen ins
+> Container-Image eingebaut oder als Artefakt weitergegeben werden.
+> So laeuft kubescape komplett offline ohne externe Abhaengigkeit.
+
 ---
 
-## Schritt 7: Einzelne Datei scannen — nur der API-Server
+## Schritt 9: Einzelne Datei scannen — nur der API-Server
 
 ```
 kubescape scan /etc/kubernetes/manifests/kube-apiserver.yaml -v
@@ -179,7 +266,7 @@ Workload
 
 ---
 
-## Schritt 8: Ein einzelnes Control mit Details
+## Schritt 10: Ein einzelnes Control mit Details
 
 Konkret nachschauen was HostPath-Mounts bei den Control-Plane-Pods bedeutet:
 
@@ -196,7 +283,7 @@ sie muessen auf TLS-Zertifikate und Datenbankdaten zugreifen.
 
 ---
 
-## Schritt 9: Scan-Ergebnis als Report speichern
+## Schritt 11: Scan-Ergebnis als Report speichern
 
 ```
 kubescape scan framework NSA /etc/kubernetes/manifests/ \
@@ -219,7 +306,7 @@ Security-Dashboards.
 
 ---
 
-## Schritt 10: Aufraumen auf dem CP-Node
+## Schritt 12: Aufraumen auf dem CP-Node
 
 ```
 rm -f /tmp/cp-nsa-report.json /tmp/cp-cis-report.json
@@ -237,10 +324,13 @@ exit
 
 | Befehl | Was er tut |
 |--------|-----------|
+| `kubescape list frameworks` | Alle verfuegbaren Frameworks anzeigen |
+| `kubescape download artifacts` | Alle Frameworks/Controls lokal speichern (Offline-Vorbereitung) |
 | `kubescape scan <pfad>` | Alle YAML-Dateien im Pfad scannen |
 | `kubescape scan <datei>` | Einzelne YAML-Datei scannen |
 | `kubescape scan framework NSA <pfad>` | Scan gegen NSA-Framework |
 | `kubescape scan framework cis-v1.10.0 <pfad>` | Scan gegen CIS v1.10.0 |
+| `kubescape scan framework cis-v1.10.0 <pfad> --use-artifacts-from ~/.kubescape/` | Offline-Scan aus lokalem Cache |
 | `kubescape scan control C-0041 <pfad> -v` | Ein Control detailliert pruefen |
 | `--format json --output report.json` | Ergebnis als JSON speichern |
 
