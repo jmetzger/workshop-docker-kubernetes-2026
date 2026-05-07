@@ -125,6 +125,7 @@
 
   1. Kubernetes - Security Scanning mit Kubescape
      * [NSA/MITRE/CIS - Kubescape: Framework-Compliance und RBAC-Schwachstellen finden](kubernetes-security/kubescape-exercise.md)
+     * [CIS/NSA - Kubescape: Control-Plane YAML-Dateien offline scannen](kubernetes-security/kubescape-cp-filescan.md)
 
   1. Abschluss-Lab
      * [Kap. 5.1/5.2/5.3 - Pod Hardening Lab: SecurityContext, NetworkPolicy, RBAC](kubernetes-security/pod-hardening-lab.md)
