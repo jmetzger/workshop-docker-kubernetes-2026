@@ -283,7 +283,143 @@ sie muessen auf TLS-Zertifikate und Datenbankdaten zugreifen.
 
 ---
 
-## Schritt 11: Scan-Ergebnis als Report speichern
+## Schritt 11: API-Server haerten — Finding beheben und verifizieren
+
+Wir beheben jetzt das NSA-Finding **"Allow privilege escalation"** (C-0016)
+direkt in der kube-apiserver.yaml.
+
+### Schritt 11a: Backup — immer zuerst
+
+```
+cp /etc/kubernetes/manifests/kube-apiserver.yaml \
+   /etc/kubernetes/manifests/kube-apiserver.yaml.bak
+```
+
+> **Wichtig:** Die Datei enthaelt eine kubeadm-verwaltete Annotation:
+> `kubeadm.kubernetes.io/kube-apiserver.advertise-address.endpoint`
+> Diese darf nicht entfernt werden — kubeadm benoetigt sie fuer Upgrades.
+> Das Backup sichert den exakten Originalzustand inkl. aller Annotations.
+
+### Schritt 11b: Container-securityContext ergaenzen
+
+Aktuelle Situation in der Datei — kein container-level securityContext:
+
+```
+grep -n "securityContext\|resources:" /etc/kubernetes/manifests/kube-apiserver.yaml
+```
+
+```
+# Erwartete Ausgabe:
+69:    resources:
+101:  securityContext:      <- das ist der Pod-Level securityContext
+102:    seccompProfile:
+```
+
+`allowPrivilegeEscalation: false` auf Container-Ebene ergaenzen.
+Der Eintrag kommt direkt nach dem `resources:`-Block:
+
+```
+vi /etc/kubernetes/manifests/kube-apiserver.yaml
+```
+
+Vor dem `startupProbe:` einfuegen:
+
+```
+    securityContext:
+      allowPrivilegeEscalation: false
+```
+
+Das vollstaendige Ergebnis im Bereich resources sollte so aussehen:
+
+```
+    resources:
+      requests:
+        cpu: 250m
+    securityContext:
+      allowPrivilegeEscalation: false
+    startupProbe:
+```
+
+> **Achtung:** Einrueckung exakt 4 Leerzeichen — das ist Container-Level,
+> nicht Pod-Level. Der Pod-Level-Block steht weiter unten bei `hostNetwork`.
+
+### Schritt 11c: API-Server-Neustart abwarten
+
+Der kubelet erkennt die Aenderung und startet den Static Pod automatisch neu.
+Von der Bastion aus (anderes Terminal):
+
+```
+# auf Bastion:
+until KUBECONFIG=/home/tln1/.kube/config kubectl cluster-info &>/dev/null; \
+  do sleep 3; done && echo "API-Server wieder erreichbar"
+```
+
+### Schritt 11d: Scan nach dem Fix
+
+```
+kubescape scan framework NSA /etc/kubernetes/manifests/kube-apiserver.yaml \
+  --use-artifacts-from ~/.kubescape/
+```
+
+**Vorher:**
+```
+| Medium   | Allow privilege escalation     |   1    |     0%     |
+...
+Resource Summary   60.00%
+```
+
+**Nachher:**
+```
+# "Allow privilege escalation" taucht nicht mehr auf
+
+Resource Summary   65.00%
+```
+
+Das Control C-0016 ist verschwunden — Finding behoben.
+
+---
+
+## Schritt 11e: Zuruecksetzen (Reset)
+
+Nach der Uebung den Originalzustand wiederherstellen.
+Das Backup enthaelt den genauen Stand vor der Aenderung —
+inklusive der originalen kubeadm-Annotation:
+
+```
+cp /etc/kubernetes/manifests/kube-apiserver.yaml.bak \
+   /etc/kubernetes/manifests/kube-apiserver.yaml
+```
+
+Warten bis der API-Server mit dem Original neu gestartet ist:
+
+```
+until KUBECONFIG=/home/tln1/.kube/config kubectl cluster-info &>/dev/null; \
+  do sleep 3; done && echo "Reset erfolgreich"
+```
+
+Verifizieren dass keine securityContext-Zeile mehr im Container-Block steht:
+
+```
+grep -A2 "resources:" /etc/kubernetes/manifests/kube-apiserver.yaml | head -6
+```
+
+```
+# Erwartete Ausgabe (kein securityContext-Block zwischen resources und startupProbe):
+    resources:
+      requests:
+        cpu: 250m
+    startupProbe:
+```
+
+Backup aufraeumen:
+
+```
+rm /etc/kubernetes/manifests/kube-apiserver.yaml.bak
+```
+
+---
+
+## Schritt 12: Scan-Ergebnis als Report speichern
 
 ```
 kubescape scan framework NSA /etc/kubernetes/manifests/ \
