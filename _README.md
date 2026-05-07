@@ -105,6 +105,7 @@
 
   1. Kubernetes - RBAC Hardening
      * [Kap. 5.1 - RBAC Grundlagen: Roles, Bindings, Subjects, Verbs](#kap-51---rbac-grundlagen-roles-bindings-subjects-verbs)
+     * [Kap. 5.1 - RBAC Nutzer anlegen und als zweites kubectl-Profil einrichten](#kap-51---rbac-nutzer-anlegen-und-als-zweites-kubectl-profil-einrichten)
      * [Kap. 5.1 - RBAC Scanning: Schwachstellen mit rbac-lookup finden](#kap-51---rbac-scanning-schwachstellen-mit-rbac-lookup-finden)
      * [Kap. 5.1.2/5.1.6 - RBAC Least Privilege für Entwickler-Namespace](#kap-512516---rbac-least-privilege-für-entwickler-namespace)
 
@@ -112,7 +113,7 @@
      * [Kap. 5.2.1 - PSA: Namespace-weite Durchsetzung von Pod Security Standards](#kap-521---psa-namespace-weite-durchsetzung-von-pod-security-standards)
 
   1. Kubernetes - SecurityContext
-     * [Kap. 5.2.2/5.2.4/5.2.6/5.2.9 - Pods haerten: non-root, read-only, Capabilities, Seccomp](#kap-522524526529---pods-haerten-non-root-read-only-capabilities-seccomp)
+     * [Kap. 5.2.2/5.2.4/5.2.6/5.2.7/5.2.9 - Pods haerten: non-root, read-only, Capabilities, Seccomp](#kap-522524526527529---pods-haerten-non-root-read-only-capabilities-seccomp)
 
   1. Kubernetes - NetworkPolicy
      * [Kap. 5.3 - Pod-Traffic absichern: Default-Deny, DNS, Pod-zu-Pod](#kap-53---pod-traffic-absichern-default-deny-dns-pod-zu-pod)
@@ -4920,6 +4921,251 @@ kein Zugriff auf Secrets, keine Schreibrechte, kein anderer Namespace.
   * https://www.cisecurity.org/benchmark/kubernetes (Sektion 5.1)
   * https://github.com/FairwindsOps/rbac-lookup
 
+### Kap. 5.1 - RBAC Nutzer anlegen und als zweites kubectl-Profil einrichten
+
+
+### Hintergrund
+
+In der Praxis greifen verschiedene Personen oder Systeme auf denselben Cluster zu —
+jeder mit eigenen Rechten. Dieses Beispiel zeigt den vollstaendigen Weg:
+
+1. ServiceAccount + Token anlegen
+2. Rolle und Binding definieren (Least Privilege)
+3. Token als zweites Profil in kubeconfig eintragen
+4. Context wechseln und Rechte verifizieren
+5. Zurueck zum Admin-Context
+
+> Ab Kubernetes 1.25 werden Tokens **nicht** mehr automatisch beim Anlegen eines
+> ServiceAccounts erstellt. Das Secret mit dem Token muss manuell mit einer
+> Annotation angelegt werden.
+
+---
+
+### Schritt 1: Vorbereitung
+
+```
+cd
+mkdir -p manifests/rbac-user
+cd manifests/rbac-user
+```
+
+---
+
+### Schritt 2: ServiceAccount und Token-Secret anlegen
+
+```
+## vi 01-serviceaccount.yml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: training<nr>
+  namespace: default
+```
+
+```
+## vi 02-secret.yml
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: trainingtoken<nr>
+  namespace: default
+  annotations:
+    kubernetes.io/service-account.name: training<nr>
+```
+
+```
+kubectl apply -f .
+```
+
+Token wurde erzeugt?
+
+```
+kubectl get secret trainingtoken<nr> -o jsonpath='{.data.token}' | base64 --decode | head -c 50
+```
+
+Wenn eine JWT-Zeichenkette erscheint: Token ist da.
+
+---
+
+### Schritt 3: ClusterRole mit minimalen Rechten definieren
+
+```
+## vi 03-clusterrole.yml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pods-clusterrole<nr>
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list", "create"]
+```
+
+```
+kubectl apply -f 03-clusterrole.yml
+```
+
+---
+
+### Schritt 4: ClusterRole per RoleBinding dem ServiceAccount zuweisen
+
+RoleBinding statt ClusterRoleBinding — Zugriff nur im `default`-Namespace:
+
+```
+## vi 04-rolebinding.yml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rolebinding-default-pods<nr>
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pods-clusterrole<nr>
+subjects:
+- kind: ServiceAccount
+  name: training<nr>
+  namespace: default
+```
+
+```
+kubectl apply -f 04-rolebinding.yml
+```
+
+---
+
+### Schritt 5: Rechte pruefen (ohne Context-Wechsel)
+
+```
+kubectl auth can-i get pods -n default \
+  --as system:serviceaccount:default:training<nr>
+```
+
+```
+yes
+```
+
+```
+kubectl auth can-i get deployments -n default \
+  --as system:serviceaccount:default:training<nr>
+```
+
+```
+no
+```
+
+Pods: erlaubt. Deployments: verboten. Least Privilege funktioniert.
+
+---
+
+### Schritt 6: Token auslesen und als zweites kubectl-Profil eintragen
+
+Token in Variable laden:
+
+```
+TOKEN=$(kubectl get secret trainingtoken<nr> \
+  -o jsonpath='{.data.token}' | base64 --decode)
+echo $TOKEN
+```
+
+Neuen Context und Credentials in die kubeconfig eintragen.
+Der Cluster-Name in einem kubeadm-Cluster lautet `kubernetes`:
+
+```
+kubectl config set-context training-ctx \
+  --cluster kubernetes \
+  --user training<nr>
+
+kubectl config set-credentials training<nr> --token=$TOKEN
+```
+
+Beide Contexts anzeigen:
+
+```
+kubectl config get-contexts
+```
+
+```
+CURRENT   NAME                          CLUSTER      AUTHINFO           NAMESPACE
+*         kubernetes-admin@kubernetes   kubernetes   kubernetes-admin
+          training-ctx                  kubernetes   training<nr>
+```
+
+---
+
+### Schritt 7: Context wechseln und Rechte testen
+
+```
+kubectl config use-context training-ctx
+```
+
+Erlaubte Aktion — Pods auflisten:
+
+```
+kubectl get pods
+```
+
+Verbotene Aktion — Deployments auflisten:
+
+```
+kubectl get deployments
+```
+
+**Erwarteter Fehler:**
+```
+Error from server (Forbidden): deployments.apps is forbidden:
+User "system:serviceaccount:default:training<nr>" cannot list resource
+"deployments" in API group "apps" in the namespace "default"
+```
+
+---
+
+### Schritt 8: Zurueck zum Admin-Context
+
+```
+kubectl config use-context kubernetes-admin@kubernetes
+```
+
+Verifizieren:
+
+```
+kubectl config get-contexts
+```
+
+```
+CURRENT   NAME                          CLUSTER      AUTHINFO           NAMESPACE
+*         kubernetes-admin@kubernetes   kubernetes   kubernetes-admin
+          training-ctx                  kubernetes   training<nr>
+```
+
+---
+
+### Aufraeumen
+
+```
+kubectl config delete-context training-ctx
+kubectl config unset users.training<nr>
+```
+
+```
+kubectl delete -f .
+```
+
+---
+
+### Zusammenfassung
+
+| Was | Wie |
+|-----|-----|
+| SA + Token anlegen | ServiceAccount + Secret mit Annotation |
+| Rechte vergeben | ClusterRole + RoleBinding (namespace-scoped) |
+| Rechte testen | `kubectl auth can-i ... --as system:serviceaccount:...` |
+| Token auslesen | `kubectl get secret ... -o jsonpath='{.data.token}' | base64 --decode` |
+| Zweites Profil | `kubectl config set-context` + `set-credentials` |
+| Context wechseln | `kubectl config use-context <name>` |
+| Zurueck zu Admin | `kubectl config use-context kubernetes-admin@kubernetes` |
+
 ### Kap. 5.1 - RBAC Scanning: Schwachstellen mit rbac-lookup finden
 
 
@@ -5632,7 +5878,7 @@ kubectl delete namespace psa-restricted psa-warn
 
 ## Kubernetes - SecurityContext
 
-### Kap. 5.2.2/5.2.4/5.2.6/5.2.9 - Pods haerten: non-root, read-only, Capabilities, Seccomp
+### Kap. 5.2.2/5.2.4/5.2.6/5.2.7/5.2.9 - Pods haerten: non-root, read-only, Capabilities, Seccomp
 
 
 ### Hintergrund
@@ -5643,11 +5889,11 @@ ein Angreifer, der aus dem Container ausbricht, hat damit direkt root-Zugriff au
 
 | Einstellung | Beschreibung | CIS |
 |-------------|-------------|-----|
-| `runAsNonRoot: true` | Container darf nicht als root starten | 5.2.6 |
-| `runAsUser` | Konkrete UID setzen | 5.2.6 |
+| `runAsNonRoot: true` | Container darf nicht als root starten | 5.2.7 |
+| `runAsUser` | Konkrete UID setzen (nicht 0) | 5.2.7 |
 | `readOnlyRootFilesystem` | Filesystem ist schreibgeschuetzt | 5.2.4 |
-| `allowPrivilegeEscalation: false` | Kein sudo/setuid moeglich | 5.2.5 |
-| `capabilities.drop: ["ALL"]` | Alle Linux-Capabilities entfernen | 5.2.7 |
+| `allowPrivilegeEscalation: false` | Kein sudo/setuid moeglich | 5.2.6 |
+| `capabilities.drop: ["ALL"]` | Alle Linux-Capabilities entfernen | 5.2.9 |
 | `seccompProfile: RuntimeDefault` | Syscall-Filter aktivieren | 5.2.2 |
 
 ---
@@ -5979,11 +6225,11 @@ kubectl delete pod pod-root pod-nonroot pod-readonly pod-nocaps pod-hardened -n 
 
 | Was | Wo konfiguriert | Warum |
 |-----|----------------|-------|
-| `runAsNonRoot` / `runAsUser` | `pod.spec.securityContext` | Kein root im Container |
-| `readOnlyRootFilesystem` | `container.securityContext` | Kein Schreiben ins Filesystem |
-| `allowPrivilegeEscalation: false` | `container.securityContext` | Kein sudo/setuid |
-| `capabilities.drop: ["ALL"]` | `container.securityContext` | Keine Kernel-Privilegien |
-| `seccompProfile: RuntimeDefault` | `pod.spec.securityContext` | Syscall-Filter |
+| `runAsNonRoot` / `runAsUser` | `pod.spec.securityContext` | Kein root im Container (CIS 5.2.7) |
+| `readOnlyRootFilesystem` | `container.securityContext` | Kein Schreiben ins Filesystem (CIS 5.2.4) |
+| `allowPrivilegeEscalation: false` | `container.securityContext` | Kein sudo/setuid (CIS 5.2.6) |
+| `capabilities.drop: ["ALL"]` | `container.securityContext` | Keine Kernel-Privilegien (CIS 5.2.9) |
+| `seccompProfile: RuntimeDefault` | `pod.spec.securityContext` | Syscall-Filter (CIS 5.2.2) |
 | `emptyDir` Volumes | `volumes` + `volumeMounts` | Schreibbare Verzeichnisse fuer die App |
 | `nginxinc/nginx-unprivileged` | Image | nginx ohne root-Anforderung |
 
@@ -6170,18 +6416,11 @@ kubectl apply -f 02-allow-dns.yml -n default
 DNS testen:
 
 ```
-kubectl exec -n default frontend -- nslookup backend
+##dns klappt, aber http-traffic ist noch gesperrt 
+kubectl exec -n default frontend -- curl -v -s --max-time 5 http://backend
 ```
 
 **Erwartete Ausgabe:** IP-Adresse wird aufgeloest.
-
-HTTP zu Backend schlaegt aber noch fehl:
-
-```
-kubectl exec -n default frontend -- curl -s --max-time 5 http://backend
-```
-
-**Erwarteter Fehler:** Timeout — HTTP-Traffic noch gesperrt.
 
 ---
 
@@ -6247,7 +6486,7 @@ kubectl exec -n default frontend -- curl -s http://backend | grep title
 Externer Traffic bleibt gesperrt (Egress-Deny greift):
 
 ```
-kubectl exec -n default frontend -- curl -s --max-time 5 http://example.com
+kubectl exec -n default frontend -- curl -s --max-time 5 http://www.google.de
 ```
 
 **Erwarteter Fehler:** Timeout.
