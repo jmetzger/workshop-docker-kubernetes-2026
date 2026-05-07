@@ -105,6 +105,7 @@
 
   1. Kubernetes - RBAC Hardening
      * [Kap. 5.1 - RBAC Grundlagen: Roles, Bindings, Subjects, Verbs](kubernetes-security/rbac-overview.md)
+     * [Kap. 5.1 - RBAC Nutzer anlegen und als zweites kubectl-Profil einrichten](kubernetes-security/rbac-create-user-kubeconfig.md)
      * [Kap. 5.1 - RBAC Scanning: Schwachstellen mit rbac-lookup finden](kubernetes-security/rbac-exercise-scanning.md)
      * [Kap. 5.1.2/5.1.6 - RBAC Least Privilege für Entwickler-Namespace](kubernetes-security/rbac-exercise-least-privilege.md)
 
