@@ -131,6 +131,11 @@
   1. Abschluss-Lab
      * [Kap. 5.1/5.2/5.3 - Pod Hardening Lab: SecurityContext, NetworkPolicy, RBAC](kubernetes-security/pod-hardening-lab.md)
 
+  1. Kubernetes Monitoring - Prometheus/Grafana
+     * [Prometheus Monitoring Server (Überblick)](prometheus/overview.md)
+     * [Prometheus / Grafana Stack mit Helm installieren](prometheus-grafana/install-with-helm.md)
+     * [Kubernetes Grafana Dashboards](prometheus-grafana/kubernetes-grafana-dashboards.md)
+
 
 ## Backlog - Kubernetes 
 
