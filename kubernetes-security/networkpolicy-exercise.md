@@ -172,11 +172,18 @@ kubectl apply -f 02-allow-dns.yml -n default
 DNS testen:
 
 ```
-#dns klappt, aber http-traffic ist noch gesperrt 
-kubectl exec -n default frontend -- curl -v -s --max-time 5 http://backend
+kubectl exec -n default frontend -- getent hosts backend
 ```
 
-**Erwartete Ausgabe:** IP-Adresse wird aufgeloest.
+**Erwartete Ausgabe:** IP-Adresse wird aufgeloest (z.B. `10.96.x.x  backend.default.svc.cluster.local`).
+
+HTTP zu Backend schlaegt aber noch fehl:
+
+```
+kubectl exec -n default frontend -- curl -s --max-time 5 http://backend
+```
+
+**Erwarteter Fehler:** Timeout — HTTP-Traffic noch gesperrt.
 
 ---
 

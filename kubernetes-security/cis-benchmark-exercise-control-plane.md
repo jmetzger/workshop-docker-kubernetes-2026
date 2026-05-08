@@ -12,16 +12,18 @@ kubectl delete jobs kube-bench
 ## Walkthrough
 
 ```
-# Look for taints on master node
-kubectl describe node k8s-cp
-# easier
-kubectl describe node k8s-cp | grep -i taints 
+# Node-Namen anzeigen
+kubectl get nodes
+
+# Taint des Control-Plane-Nodes pruefen
+# Hinweis: Node-Name hat das Format k8s-tln<nr>-cp (z.B. k8s-tln1-cp)
+kubectl describe node k8s-tln1-cp | grep -i taints
 ```
 
 ```
-# Make control-plane scheduable for now
-kubectl taint nodes k8s-cp  node-role.kubernetes.io/control-plane:NoSchedule-
-kubectl describe node k8s-cp | grep -i taints 
+# Control-Plane schedulable machen
+kubectl taint nodes k8s-tln1-cp node-role.kubernetes.io/control-plane:NoSchedule-
+kubectl describe node k8s-tln1-cp | grep -i taints
 ```
 
 ```
@@ -37,10 +39,11 @@ wget https://raw.githubusercontent.com/aquasecurity/kube-bench/main/job.yaml
 
 ```
 # nodeName in template/spec: ergänzen wie folgt
+# Hinweis: k8s-tln1-cp durch deinen Node-Namen ersetzen (siehe kubectl get nodes)
 spec:
   template:
     spec:
-      nodeName: k8s-cp
+      nodeName: k8s-tln1-cp
       containers:
         - command: ["kube-bench"]
  
@@ -83,16 +86,8 @@ on the control plane node and set the below parameter.
 ### Fix: Walkthrough 
 
 ```
-# ip - adresse ausfindig machen 
-kubectl get nodes -o wide | grep k8s-cp
-```
-
-```
-ssh 11trainingdo@<ip-des-control-plane-nodes>
-```
-
-```
-sudo su -
+# Auf den Control-Plane-Node wechseln
+ssh cp
 ```
 
 ```
@@ -113,7 +108,6 @@ kubectl -n kube-system describe pods kube-apiserver
 
 ```
 exit
-exit
 ```
 
 
@@ -133,7 +127,7 @@ diff report.txt report-afterfix.txt
 ## Make it non-scheduable again 
 
 ```
-kubectl taint nodes k8s-cp  node-role.kubernetes.io/control-plane:NoSchedule
+kubectl taint nodes k8s-tln1-cp node-role.kubernetes.io/control-plane:NoSchedule
 ```
 
 

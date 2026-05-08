@@ -18,7 +18,7 @@ wget https://raw.githubusercontent.com/aquasecurity/kube-bench/main/job.yaml
 spec:
   template:
     spec:
-      nodeName: k8s-w1
+      nodeName: k8s-tln1-w1
       containers:
         - command: ["kube-bench"]
  
@@ -60,16 +60,8 @@ For example, chmod 600 /lib/systemd/system/kubelet.service
 ### Fix: Walkthrough 
 
 ```
-# ip - adresse ausfindig machen 
-kubectl get nodes -o wide | grep k8s-w1
-```
-
-```
-ssh 11trainingdo@<ip-des-w1-worker-nodes>
-```
-
-```
-sudo su -
+# Auf den Worker-Node wechseln
+ssh worker
 ```
 
 ```
@@ -87,7 +79,6 @@ systemctl restart kubelet
 systemctl status kubelet 
 ```
 ```
-exit
 exit
 ```
 

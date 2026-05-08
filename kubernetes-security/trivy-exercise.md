@@ -106,11 +106,33 @@ Weniger Findings — `nginx-unprivileged` hat ein schlankeres Basisimage.
 
 ## Schritt 5: Cluster-weiter Sicherheitsscan
 
-Jetzt nicht nur ein Image, sondern den ganzen Cluster:
+Jetzt nicht nur ein Image, sondern den ganzen Cluster.
+
+> **Hinweis:** `trivy k8s` startet intern einen node-collector Job auf jedem Node.
+> Der Control-Plane-Node hat standardmaessig einen NoSchedule-Taint — dieser muss
+> kurz entfernt werden, sonst gibt es einen Timeout-Fehler:
+
+```
+kubectl taint nodes k8s-tln1-cp node-role.kubernetes.io/control-plane:NoSchedule-
+```
 
 ```
 trivy k8s --report=summary --skip-db-update
 ```
+
+Taint danach wieder setzen:
+
+```
+kubectl taint nodes k8s-tln1-cp node-role.kubernetes.io/control-plane:NoSchedule
+```
+
+> **Falls der Fehler "node-collector job already exists" erscheint:**
+> Ein vorheriger Scan-Lauf hat einen Job hinterlassen. Loeschen und nochmal:
+> ```
+> kubectl delete namespace trivy-temp --force --grace-period=0
+> # kurz warten, dann nochmal:
+> trivy k8s --report=summary --skip-db-update
+> ```
 
 Die Ausgabe gliedert sich in drei Bereiche:
 
