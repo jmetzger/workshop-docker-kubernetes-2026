@@ -2,6 +2,10 @@
 
 ## Zentrale Externer Server mit 3 Nodes (Produktion) 
 
+
+<img width="1227" height="851" alt="image" src="https://github.com/user-attachments/assets/31044a54-3d23-4544-9fc2-d0cb9327a4e8" />
+
+
 ## 3-Wege für Kubernetes Daten zu bekommen 
 
   * VSO (Vault Secrets Operator)
