@@ -75,7 +75,7 @@
      * [Alte manifeste konvertieren mit convert plugin](/kubectl/convert-plugin.md)
      * [Netzwerkverbindung zu pod testen](/tipps-tricks/verbindung-zu-pod-testen.md)
      * [Curl from pod api-server](/kubernetes-advanced/curl-api-server.md)
-     * [Übung: FE zu Backend Verbindungen debuggen mit kubectl debug und NetworkPolicy](kubectl-examples/15-debug-networkpolicy.md)
+     * [Übung: FE zu Backend Verbindungen debuggen mit kubectl debug und NetworkPolicy](kubectl-examples/20-debug-networkpolicy.md)
 
   1. Kubernetes - Secrets Management (Hashicorp Vault / OpenBao)
      * [Überblick Hashicorp Vault (VSO, Sidecar, Volumes)](hashicorp-vault/overview.md)
