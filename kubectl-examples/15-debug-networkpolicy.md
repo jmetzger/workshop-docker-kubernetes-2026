@@ -3,12 +3,12 @@
 ## Hintergrund
 
 In produktiven Umgebungen laufen Container oft als minimale Images ohne Debug-Tools
-(curl, wget, nc). Wenn eine Verbindung zwischen Frontend und Backend nicht funktioniert,
-gibt es zwei haeufige Ursachen:
+(curl, wget, nc). Wenn eine Verbindung zwischen Pods nicht funktioniert, zeigt die
+Fehlermeldung bereits in welche Richtung man schauen muss:
 
-| Fehlerbild | Ursache | Diagnose |
-|-----------|---------|----------|
-| `Connection refused` | Service hat falsche Selector-Labels - keine Endpoints | `kubectl get endpoints` |
+| Fehlerbild | Ursache | Diagnose-Befehl |
+|-----------|---------|-----------------|
+| `Connection refused` | Service-Selector passt nicht - keine Endpoints | `kubectl get endpoints` |
 | `Connection timed out` | NetworkPolicy blockiert den Traffic | `kubectl describe networkpolicy` |
 
 `kubectl debug` schleust einen ephemeral Container mit Debug-Tools in einen laufenden
@@ -70,9 +70,10 @@ spec:
 kubectl apply -f 01-backend.yml -n debug-<dein-name>
 ```
 
-## Schritt 3: Frontend Deployment anlegen (ohne Debug-Tools)
+## Schritt 3: Frontend Deployment und Service anlegen
 
-Das Frontend laeuft als minimales Python-Image - kein curl, kein wget, kein nc.
+Das Frontend laeuft als minimales Python-Image (kein curl, wget, nc) und startet
+einen einfachen HTTP-Server auf Port 8080.
 
 ```
 nano 02-frontend.yml
@@ -97,7 +98,20 @@ spec:
       containers:
       - name: frontend
         image: python:3.12-slim
-        command: ["python", "-c", "import time; time.sleep(86400)"]
+        command: ["python", "-m", "http.server", "8080"]
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 8080
+    targetPort: 8080
 ```
 
 ```
@@ -108,6 +122,7 @@ Warten bis beide Pods laufen:
 
 ```
 kubectl get pods -n debug-<dein-name>
+kubectl get services -n debug-<dein-name>
 ```
 
 **Erwartete Ausgabe:**
@@ -115,20 +130,22 @@ kubectl get pods -n debug-<dein-name>
 NAME                        READY   STATUS    RESTARTS   AGE
 backend-xxx                 1/1     Running   0          30s
 frontend-xxx                1/1     Running   0          20s
+
+NAME           TYPE        CLUSTER-IP    PORT(S)
+backend-svc    ClusterIP   10.x.x.x      80/TCP
+frontend-svc   ClusterIP   10.x.x.x      8080/TCP
 ```
 
 ---
 
-## Problem 1: Connection refused - Service-Fehlkonfiguration
+## Problem 1: Connection refused - Fehlkonfigurierter Service-Selector
 
-## Schritt 4: Verbindung testen - keine Tools im Frontend
+## Schritt 4: Tools im Frontend pruefen
 
 ```
 FE_POD=$(kubectl get pod -n debug-<dein-name> -l app=frontend -o jsonpath='{.items[0].metadata.name}')
 echo $FE_POD
 ```
-
-Versuch direkt Tools zu nutzen:
 
 ```
 kubectl exec -it $FE_POD -n debug-<dein-name> -- sh -c 'which curl; which wget; which nc'
@@ -141,7 +158,7 @@ no wget
 no nc
 ```
 
-## Schritt 5: kubectl debug - Ephemeral Container hinzufuegen
+## Schritt 5: kubectl debug - Verbindung vom Frontend zum Backend testen
 
 ```
 kubectl debug -it $FE_POD -n debug-<dein-name> \
@@ -151,37 +168,28 @@ kubectl debug -it $FE_POD -n debug-<dein-name> \
   -- sh
 ```
 
-Im Debug-Container testen:
+Im Debug-Container:
 
 ```
 nslookup backend-svc
-```
-
-**Erwartete Ausgabe (DNS funktioniert):**
-```
-Name:   backend-svc.debug-<dein-name>.svc.cluster.local
-Address: 10.x.x.x
-```
-
-```
 wget -qO- http://backend-svc --timeout=5
 ```
 
 **Erwartete Ausgabe:**
 ```
+Name:   backend-svc.debug-<dein-name>.svc.cluster.local
+Address: 10.x.x.x
+
 wget: can't connect to remote host (10.x.x.x): Connection refused
 ```
 
-DNS loest auf - aber TCP schlaegt sofort fehl (kein Timeout, sondern `Connection refused`).
-Das ist kein NetworkPolicy-Problem. Der Service hat keine Endpoints.
-
-Verlasse den Debug-Container:
+DNS loest auf - aber `Connection refused` bedeutet: kein Endpoint hinter dem Service.
 
 ```
 exit
 ```
 
-## Schritt 6: Endpoints pruefen
+## Schritt 6: Endpoints pruefen und Ursache finden
 
 ```
 kubectl get endpoints backend-svc -n debug-<dein-name>
@@ -193,19 +201,11 @@ NAME          ENDPOINTS   AGE
 backend-svc   <none>      2m
 ```
 
-Keine Endpoints! Der Service findet keine passenden Pods. Vergleiche den Service-Selector
-mit den Pod-Labels:
+Selector des Service mit Pod-Labels vergleichen:
 
 ```
 kubectl get service backend-svc -n debug-<dein-name> -o jsonpath='{.spec.selector}'
 kubectl get pods -n debug-<dein-name> -l app=backend --show-labels
-```
-
-**Ausgabe:**
-```
-{"app":"backend-api"}
-NAME          LABELS
-backend-xxx   app=backend,tier=backend,...
 ```
 
 **Diagnose:** Service sucht `app=backend-api`, Pods haben `app=backend`.
@@ -221,13 +221,13 @@ kubectl patch service backend-svc -n debug-<dein-name> \
 kubectl get endpoints backend-svc -n debug-<dein-name>
 ```
 
-**Erwartete Ausgabe (jetzt mit Endpoint):**
+**Erwartete Ausgabe:**
 ```
-NAME          ENDPOINTS         AGE
-backend-svc   10.x.x.x:80      3m
+NAME          ENDPOINTS      AGE
+backend-svc   10.x.x.x:80   3m
 ```
 
-Erneut testen mit kubectl debug:
+Erneut testen:
 
 ```
 kubectl debug -it $FE_POD -n debug-<dein-name> \
@@ -241,7 +241,7 @@ kubectl debug -it $FE_POD -n debug-<dein-name> \
 wget -qO- http://backend-svc --timeout=5
 ```
 
-**Erwartete Ausgabe (Verbindung OK):**
+**Erwartete Ausgabe:**
 ```
 <h1>Welcome to nginx!</h1>
 ```
@@ -252,15 +252,12 @@ exit
 
 ---
 
-## Problem 2: Connection timed out - NetworkPolicy
+## Problem 2: Connection timed out - NetworkPolicy blockiert FE zu Backend
 
-## Schritt 8: NetworkPolicy anwenden
-
-Die NetworkPolicy erlaubt Zugriff auf das Backend nur von Pods mit dem Label
-`role: api-consumer`.
+## Schritt 8: NetworkPolicy fuer Backend anwenden
 
 ```
-nano 03-networkpolicy.yml
+nano 03-networkpolicy-backend.yml
 ```
 
 ```
@@ -285,10 +282,10 @@ spec:
 ```
 
 ```
-kubectl apply -f 03-networkpolicy.yml -n debug-<dein-name>
+kubectl apply -f 03-networkpolicy-backend.yml -n debug-<dein-name>
 ```
 
-## Schritt 9: Verbindung testen - anderer Fehler
+## Schritt 9: Verbindung testen - anderes Fehlerbild
 
 ```
 kubectl debug -it $FE_POD -n debug-<dein-name> \
@@ -307,8 +304,8 @@ wget -qO- http://backend-svc --timeout=5
 wget: download timed out
 ```
 
-Diesmal ein **Timeout** - nicht `Connection refused`. Der Service hat Endpoints,
-aber die NetworkPolicy blockiert den Traffic.
+Diesmal ein **Timeout** statt `Connection refused`. Endpoints existieren, aber die
+NetworkPolicy blockiert den Traffic.
 
 ```
 exit
@@ -318,30 +315,11 @@ exit
 
 ```
 kubectl describe networkpolicy backend-policy -n debug-<dein-name>
-```
-
-**Ausgabe:**
-```
-Spec:
-  PodSelector:     app=backend
-  Allowing ingress traffic:
-    To Port: 80/TCP
-    From:
-      PodSelector: role=api-consumer
-```
-
-```
 kubectl get pods -n debug-<dein-name> --show-labels
 ```
 
-**Ausgabe:**
-```
-NAME           LABELS
-backend-xxx    app=backend,tier=backend,...
-frontend-xxx   app=frontend,tier=frontend,...
-```
-
-**Diagnose:** Frontend-Pod hat kein Label `role=api-consumer`.
+**Diagnose:** NetworkPolicy erlaubt nur `role=api-consumer`. Frontend-Pod hat dieses
+Label nicht.
 
 ## Schritt 11: Fix - Label zum Frontend Deployment hinzufuegen
 
@@ -350,19 +328,11 @@ kubectl patch deployment frontend -n debug-<dein-name> \
   -p '{"spec":{"template":{"metadata":{"labels":{"role":"api-consumer"}}}}}'
 ```
 
-Warten bis der neue Pod laeuft:
-
 ```
 kubectl get pods -n debug-<dein-name> -l role=api-consumer
 ```
 
-**Erwartete Ausgabe:**
-```
-NAME           READY   STATUS    RESTARTS   AGE
-frontend-yyy   1/1     Running   0          10s
-```
-
-## Schritt 12: Finale Verbindung pruefen
+Neuen Pod-Namen holen und erneut testen:
 
 ```
 FE_POD=$(kubectl get pod -n debug-<dein-name> -l app=frontend,role=api-consumer \
@@ -377,18 +347,129 @@ kubectl debug -it $FE_POD -n debug-<dein-name> \
 
 ```
 wget -qO- http://backend-svc --timeout=5
+exit
+```
+
+**Erwartete Ausgabe:** `<h1>Welcome to nginx!</h1>` - Verbindung OK.
+
+---
+
+## Problem 3: Rueckweg - Backend zu Frontend
+
+## Schritt 12: NetworkPolicy fuer Frontend anwenden
+
+```
+nano 04-networkpolicy-frontend.yml
+```
+
+```
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          role: backend-consumer
+    ports:
+    - protocol: TCP
+      port: 8080
+```
+
+```
+kubectl apply -f 04-networkpolicy-frontend.yml -n debug-<dein-name>
+```
+
+## Schritt 13: Rueckweg vom Backend debuggen
+
+Backend-Pod-Namen holen:
+
+```
+BE_POD=$(kubectl get pod -n debug-<dein-name> -l app=backend -o jsonpath='{.items[0].metadata.name}')
+echo $BE_POD
+```
+
+Debug-Container im Backend-Pod starten:
+
+```
+kubectl debug -it $BE_POD -n debug-<dein-name> \
+  --image=busybox:1.36 \
+  --target=backend \
+  --profile=general \
+  -- sh
+```
+
+Im Debug-Container:
+
+```
+nslookup frontend-svc
+wget -qO- http://frontend-svc:8080 --timeout=5
 ```
 
 **Erwartete Ausgabe:**
 ```
-<h1>Welcome to nginx!</h1>
+Name:   frontend-svc.debug-<dein-name>.svc.cluster.local
+Address: 10.x.x.x
+
+wget: download timed out
 ```
 
-Verbindung funktioniert. Verlasse den Debug-Container:
+DNS loest auf, aber Timeout - NetworkPolicy blockiert.
 
 ```
 exit
 ```
+
+## Schritt 14: Diagnose und Fix
+
+```
+kubectl describe networkpolicy frontend-policy -n debug-<dein-name>
+kubectl get pods -n debug-<dein-name> -l app=backend --show-labels
+```
+
+**Diagnose:** NetworkPolicy erlaubt nur `role=backend-consumer`. Backend-Pod hat
+dieses Label nicht.
+
+```
+kubectl patch deployment backend -n debug-<dein-name> \
+  -p '{"spec":{"template":{"metadata":{"labels":{"role":"backend-consumer"}}}}}'
+```
+
+```
+kubectl get pods -n debug-<dein-name> -l role=backend-consumer
+```
+
+## Schritt 15: Rueckweg erneut testen
+
+```
+BE_POD=$(kubectl get pod -n debug-<dein-name> -l app=backend,role=backend-consumer \
+  -o jsonpath='{.items[0].metadata.name}')
+
+kubectl debug -it $BE_POD -n debug-<dein-name> \
+  --image=busybox:1.36 \
+  --target=backend \
+  --profile=general \
+  -- sh
+```
+
+```
+wget -qO- http://frontend-svc:8080 --timeout=5
+exit
+```
+
+**Erwartete Ausgabe:**
+```
+<title>Directory listing for /</title>
+```
+
+Rueckweg funktioniert.
 
 ## Aufraeumen
 
@@ -398,7 +479,8 @@ kubectl delete namespace debug-<dein-name>
 
 ## Zusammenfassung
 
-| Problem | Fehlermeldung | Diagnose-Befehl | Fix |
-|---------|--------------|-----------------|-----|
+| Problem | Fehlermeldung | Diagnose | Fix |
+|---------|--------------|----------|-----|
 | Falscher Service-Selector | `Connection refused` | `kubectl get endpoints` | Selector anpassen |
-| NetworkPolicy blockiert | `download timed out` | `kubectl describe networkpolicy` | Label am Pod-Template erganzen |
+| NetworkPolicy FE -> Backend | `timed out` | `kubectl describe networkpolicy` | Label `role=api-consumer` am Frontend |
+| NetworkPolicy Backend -> FE | `timed out` | `kubectl describe networkpolicy` | Label `role=backend-consumer` am Backend |
